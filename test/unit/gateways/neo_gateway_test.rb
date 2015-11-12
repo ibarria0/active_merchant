@@ -72,7 +72,7 @@ class NeoGatewayTest < Test::Unit::TestCase
 
     response = @gateway.purchase(@amount, @credit_card, @options)
     assert_failure response
-    assert_equal Gateway::STANDARD_ERROR_CODE[:call_issuer], response.error_code
+    assert_equal Gateway::STANDARD_ERROR_CODE[:card_declined], response.error_code
   end
 
   def test_successful_authorize
@@ -136,7 +136,7 @@ class NeoGatewayTest < Test::Unit::TestCase
   end
 
   def failed_purchase_response
-    "01~012345678901~012345~120000~0505~012345678"
+    "05~012345678901~012345~120000~0505~012345678"
   end
 
   def successful_authorize_response
