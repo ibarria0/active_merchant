@@ -109,25 +109,55 @@ class NeoGatewayTest < Test::Unit::TestCase
   end
 
   def test_scrub
-    #assert @gateway.supports_scrubbing?
-    #assert_equal @gateway.scrub(pre_scrubbed), post_scrubbed
+    assert @gateway.supports_scrubbing?
+    assert_equal @gateway.scrub(pre_scrubbed), post_scrubbed
   end
 
   private
 
   def pre_scrubbed
     %q(
-      Run the remote tests for this gateway, and then put the contents of transcript.log here.
+    opening connection to gatewaytest.merchantprocess.net:80...
+    opened
+    <- "POST /transaction.aspx?Amount=1.00&CurrencyCode=840&Cardholder=Longbob+Longsen&CardNumber=4000100011112224&Expiration=0916&cvv2=123&Bill_address=456+My+Street+Apt+1&Bill_city=Ottawa&Bill_country=CA&Bill_state=ON&Bill_zip_code=K1C2N6&AccCode=TEST&ProcCode=000000&Merchant=100177&Terminal=100177001 HTTP/1.1\r\nContent-Type: application/x-www-form-urlencoded\r\nAccept-Encoding: gzip;q=1.0,deflate;q=0.6,identity;q=0.3\r\nAccept: */*\r\nUser-Agent: Ruby\r\nConnection: close\r\nHost: gatewaytest.merchantprocess.net\r\nContent-Length: 0\r\n\r\n"
+    <- ""
+    -> "HTTP/1.1 200 OK\r\n"
+    -> "Cache-Control: private\r\n"
+    -> "Content-Type: text/html; charset=utf-8\r\n"
+    -> "Server: Microsoft-IIS/7.0\r\n"
+    -> "X-AspNet-Version: 4.0.30319\r\n"
+    -> "X-Powered-By: ASP.NET\r\n"
+    -> "Date: Fri, 13 Nov 2015 16:17:38 GMT\r\n"
+    -> "Connection: close\r\n"
+    -> "Content-Length: 21\r\n"
+    -> "\r\n"
+    reading 21 bytes...
+    -> "90~0~0~0~0~000000000~"
+    read 21 bytes
+    Conn close
     )
   end
 
   def post_scrubbed
     %q(
-      Put the scrubbed contents of transcript.log here after implementing your scrubbing function.
-      Things to scrub:
-        - Credit card number
-        - CVV
-        - Sensitive authentication details
+    opening connection to gatewaytest.merchantprocess.net:80...
+    opened
+    <- "POST /transaction.aspx?Amount=1.00&CurrencyCode=840&Cardholder=Longbob+Longsen&CardNumber=FILTERED&Expiration=0916&cvv2=FILTERED&Bill_address=456+My+Street+Apt+1&Bill_city=Ottawa&Bill_country=CA&Bill_state=ON&Bill_zip_code=K1C2N6&AccCode=FILTERED&ProcCode=000000&Merchant=100177&Terminal=100177001 HTTP/1.1\r\nContent-Type: application/x-www-form-urlencoded\r\nAccept-Encoding: gzip;q=1.0,deflate;q=0.6,identity;q=0.3\r\nAccept: */*\r\nUser-Agent: Ruby\r\nConnection: close\r\nHost: gatewaytest.merchantprocess.net\r\nContent-Length: 0\r\n\r\n"
+    <- ""
+    -> "HTTP/1.1 200 OK\r\n"
+    -> "Cache-Control: private\r\n"
+    -> "Content-Type: text/html; charset=utf-8\r\n"
+    -> "Server: Microsoft-IIS/7.0\r\n"
+    -> "X-AspNet-Version: 4.0.30319\r\n"
+    -> "X-Powered-By: ASP.NET\r\n"
+    -> "Date: Fri, 13 Nov 2015 16:17:38 GMT\r\n"
+    -> "Connection: close\r\n"
+    -> "Content-Length: 21\r\n"
+    -> "\r\n"
+    reading 21 bytes...
+    -> "90~0~0~0~0~000000000~"
+    read 21 bytes
+    Conn close
     )
   end
 
