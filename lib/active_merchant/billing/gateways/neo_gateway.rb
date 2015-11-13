@@ -14,6 +14,8 @@ module ActiveMerchant #:nodoc:
       self.homepage_url = 'http://www.example.net/'
       self.display_name = 'Neo Gateway'
 
+      SUCCESS_MESSAGE = "Success"
+
       SUCCESS_CODES = [
         "00", "11"
       ]
@@ -194,10 +196,12 @@ module ActiveMerchant #:nodoc:
       end
 
       def scrub(transcript)
-        transcript.
-          gsub(%r((&?AccNumber=)[^&]*)i, '\1[FILTERED]').
-          gsub(%r((&?CardNumber=)[^&]*)i, '\1[FILTERED]').
-          gsub(%r((&?cvv2=)[^&]*)i, '\1[FILTERED]')
+
+        # Removes sensitive data from the logs using Regexp
+        transcript
+          .gsub(/AccCode=[[:word:]]+/, 'AccCode=FILTERED')
+          .gsub(/CardNumber=[[:word:]]+/, 'CardNumber=FILTERED')
+          .gsub(/cvv2=[[:word:]]+/, 'cvv2=FILTERED')
       end
 
       private
@@ -270,6 +274,7 @@ module ActiveMerchant #:nodoc:
                 array[3].to_s + "-" + array[4].to_s,
                 "%H%M%S-%m%d"
               )
+          rescue
           end
         end
 
@@ -304,7 +309,7 @@ module ActiveMerchant #:nodoc:
         # Build the query URL
         query = parse_query parameters
         final_url = (test? ? test_url : live_url) + "?" + query
-        response = parse_response(ssl_post(final_url, {}))
+        response = parse_response(ssl_post(final_url, nil))
 
         Response.new(
           success_from(response),
@@ -323,7 +328,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def message_from(response)
-        success_from(response) ? "Success" : error_code_from(response)
+        success_from(response) ? SUCCESS_MESSAGE : error_code_from(response)
       end
 
       def authorization_from(response)
