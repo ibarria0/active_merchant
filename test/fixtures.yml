@@ -465,6 +465,12 @@ nab_transact_privileged:
   login: XYZ0010
   password: abcd1234
 
+# Test keys were given under confidentiality request
+neo_gateway:
+  merchant: XXXXX
+  terminal_id: YYYYYYY
+  secret_key: ZZZZZZZZ
+
 net_registry:
   login: X
   password: Y

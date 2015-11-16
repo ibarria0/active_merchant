@@ -3,7 +3,7 @@ require 'cgi'
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class NeoGatewayGateway < Gateway
-      self.test_url = 'http://gatewaytest.merchantprocess.net/transaction.aspx'
+      self.test_url = 'http://gatewaysandbox.merchantprocess.net/transaction.aspx'
       self.live_url = 'https://gateway.merchantprocess.net/transaction.aspx'
 
       self.money_format = :dollars
@@ -164,15 +164,12 @@ module ActiveMerchant #:nodoc:
 
       def capture(money, authorization, options={})
         post = {'Ballot':  authorization }
-        add_payment_method(post, payment)
-        add_tracking(post, options)
         commit(:adjustment, post)
       end
 
       def refund(money, authorization, options={})
         post = {'Ballot':  authorization }
         add_invoice(post, money, options)
-        add_payment_method(post, payment)
         add_tracking(post, options)
         commit(:credit, post)
       end
