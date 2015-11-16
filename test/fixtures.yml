@@ -585,6 +585,12 @@ ncr_secure_pay:
   username: test_ecomm:public
   password: publ1ct3st
 
+# Test keys were given under confidentiality request
+neo_gateway:
+  merchant: XXXXX
+  terminal_id: YYYYYYY
+  secret_key: ZZZZZZZZ
+
 net_registry:
   login: X
   password: Y
