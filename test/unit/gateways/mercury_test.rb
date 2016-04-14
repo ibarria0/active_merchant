@@ -78,11 +78,26 @@ class MercuryTest < Test::Unit::TestCase
 
   def test_card_present_with_track_2_data
     track_data = ";5413330089010608=2512101097750213?"
+    stripped_track_data = "5413330089010608=2512101097750213"
     @credit_card.track_data = track_data
     response = stub_comms do
       @gateway.purchase(@amount, @credit_card, @options)
     end.check_request do |endpoint, data, headers|
-      assert_match(/<Track2>#{Regexp.escape(track_data)}<\/Track2>/, data)
+      assert_match(/<Track2>#{Regexp.escape(stripped_track_data)}<\/Track2>/, data)
+    end.respond_with(successful_purchase_response)
+
+    assert_instance_of Response, response
+    assert_success response
+  end
+
+  def test_card_present_with_max_length_track_1_data
+    track_data    = "%B373953192351004^CARDUSER/JOHN^200910100000019301000000877000000930001234567?"
+    stripped_data =  "B373953192351004^CARDUSER/JOHN^200910100000019301000000877000000930001234567"
+    @credit_card.track_data = track_data
+    response = stub_comms do
+      @gateway.purchase(@amount, @credit_card, @options)
+    end.check_request do |endpoint, data, headers|
+      assert_match(/<Track1>#{Regexp.escape(stripped_data)}<\/Track1>/, data)
     end.respond_with(successful_purchase_response)
 
     assert_instance_of Response, response
