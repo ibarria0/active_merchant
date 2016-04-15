@@ -4,7 +4,7 @@ module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class NeoGatewayGateway < Gateway
       self.test_url = 'http://gatewaysandbox.merchantprocess.net/transaction.aspx'
-      self.live_url = 'https://gateway.merchantprocess.net/transaction.aspx'
+      self.live_url = 'https://gateway.merchantprocess.net/v2/transaction.aspx'
 
       self.money_format = :dollars
       self.supported_countries = ['PA']
