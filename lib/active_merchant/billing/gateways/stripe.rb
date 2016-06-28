@@ -21,12 +21,11 @@ module ActiveMerchant #:nodoc:
         'unchecked' => 'P'
       }
 
-      CURRENCIES_WITHOUT_FRACTIONS = %w(BIF CLP DJF GNF JPY KMF KRW MGA PYG RWF VND VUV XAF XOF XPF)
-
       self.supported_countries = %w(AT AU BE CA CH DE DK ES FI FR GB IE IT LU NL NO SE US)
       self.default_currency = 'USD'
       self.money_format = :cents
       self.supported_cardtypes = [:visa, :master, :american_express, :discover, :jcb, :diners_club, :maestro]
+      self.currencies_without_fractions = %w(BIF CLP DJF GNF JPY KMF KRW MGA PYG RWF VND VUV XAF XOF XPF)
 
       self.homepage_url = 'https://stripe.com/'
       self.display_name = 'Stripe'
@@ -168,16 +167,15 @@ module ActiveMerchant #:nodoc:
         params = {}
         post = {}
 
-        if card_brand(payment) == "check"
-          bank_token_response = tokenize_bank_account(payment)
-          if bank_token_response.success?
-            params = { source: bank_token_response.params["token"]["id"] }
-          else
-            return bank_token_response
-          end
-        elsif payment.is_a?(ApplePayPaymentToken)
+        if payment.is_a?(ApplePayPaymentToken)
           token_exchange_response = tokenize_apple_pay_token(payment)
           params = { card: token_exchange_response.params["token"]["id"] } if token_exchange_response.success?
+        elsif payment.is_a?(StripePaymentToken)
+          add_payment_token(params, payment, options)
+        elsif payment.is_a?(Check)
+          bank_token_response = tokenize_bank_account(payment)
+          return bank_token_response unless bank_token_response.success?
+          params = { source: bank_token_response.params["token"]["id"] }
         else
           add_creditcard(params, payment, options)
         end
@@ -238,6 +236,16 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      def verify_credentials
+        begin
+          ssl_get(live_url + "charges/nonexistent", headers)
+        rescue ResponseError => e
+          return false if e.response.code.to_i == 401
+        end
+
+        true
+      end
+
       def supports_scrubbing?
         true
       end
@@ -278,7 +286,6 @@ module ActiveMerchant #:nodoc:
         unless emv_payment?(payment)
           add_amount(post, money, options, true)
           add_customer_data(post, options)
-          add_metadata(post, options)
           post[:description] = options[:description]
           post[:statement_descriptor] = options[:statement_description]
           post[:receipt_email] = options[:receipt_email] if options[:receipt_email]
@@ -286,6 +293,7 @@ module ActiveMerchant #:nodoc:
           add_flags(post, options)
         end
 
+        add_metadata(post, options)
         add_application_fee(post, options)
         add_destination(post, options)
         post
@@ -341,7 +349,8 @@ module ActiveMerchant #:nodoc:
         card = {}
         if emv_payment?(creditcard)
           add_emv_creditcard(post, creditcard.icc_data)
-          post[:card][:read_method] = "contactless" if creditcard.contactless
+          post[:card][:read_method] = "contactless" if creditcard.contactless_emv
+          post[:card][:read_method] = "contactless_magstripe_mode" if creditcard.contactless_magstripe
           if creditcard.encrypted_pin_cryptogram.present? && creditcard.encrypted_pin_ksn.present?
             post[:card][:encrypted_pin] = creditcard.encrypted_pin_cryptogram
             post[:card][:encrypted_pin_key_id] = creditcard.encrypted_pin_ksn
@@ -350,7 +359,8 @@ module ActiveMerchant #:nodoc:
           if creditcard.respond_to?(:track_data) && creditcard.track_data.present?
             card[:swipe_data] = creditcard.track_data
             card[:fallback_reason] = creditcard.fallback_reason if creditcard.fallback_reason
-            card[:read_method] = "contactless" if creditcard.contactless
+            card[:read_method] = "contactless" if creditcard.contactless_emv
+            post[:read_method] = "contactless_magstripe_mode" if creditcard.contactless_magstripe
           else
             card[:number] = creditcard.number
             card[:exp_month] = creditcard.month
@@ -532,10 +542,6 @@ module ActiveMerchant #:nodoc:
         else
           false
         end
-      end
-
-      def non_fractional_currency?(currency)
-        CURRENCIES_WITHOUT_FRACTIONS.include?(currency.to_s)
       end
 
       def emv_payment?(payment)
