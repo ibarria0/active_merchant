@@ -129,6 +129,11 @@ module ActiveMerchant #:nodoc:
         commit(:store, build_store_request(credit_card, options), credit_card)
       end
 
+      def verify_credentials
+        response = void("0")
+        response.message != "Unauthorized Request. Bad or missing credentials."
+      end
+
       def supports_scrubbing?
         true
       end
@@ -221,9 +226,9 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_credit_card(xml, credit_card, options)
-
         if credit_card.respond_to?(:track_data) && credit_card.track_data.present?
           xml.tag! "Track1", credit_card.track_data
+          xml.tag! "Ecommerce_Flag", "R"
         else
           xml.tag! "Card_Number", credit_card.number
           xml.tag! "Expiry_Date", expdate(credit_card)

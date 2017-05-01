@@ -20,7 +20,8 @@ module ActiveMerchant #:nodoc:
         :void => 'VOID',
         :abort => 'ABORT',
         :store => 'TOKEN',
-        :unstore => 'REMOVETOKEN'
+        :unstore => 'REMOVETOKEN',
+        :repeat => 'REPEAT'
       }
 
       CREDIT_CARDS = {
@@ -87,7 +88,7 @@ module ActiveMerchant #:nodoc:
         add_customer_data(post, options)
         add_optional_data(post, options)
 
-        commit(:purchase, post)
+        commit((options[:repeat] ? :repeat : :purchase), post)
       end
 
       def authorize(money, payment_method, options = {})
@@ -130,7 +131,7 @@ module ActiveMerchant #:nodoc:
 
         post = {}
 
-        add_credit_reference(post, identification)
+        add_related_reference(post, identification)
         add_amount(post, money, options)
         add_invoice(post, options)
 
@@ -175,6 +176,17 @@ module ActiveMerchant #:nodoc:
       end
 
       private
+      def truncate(value, max_size)
+        return nil unless value
+        return value.to_s if CGI.escape(value.to_s).length <= max_size
+
+        if value.size > max_size
+          truncate(super(value, max_size), max_size)
+        else
+          truncate(value.to_s.chop, max_size)
+        end
+      end
+
       def add_reference(post, identification)
         order_id, transaction_id, authorization, security_key = identification.split(';')
 
@@ -184,7 +196,7 @@ module ActiveMerchant #:nodoc:
         add_pair(post, :SecurityKey, security_key)
       end
 
-      def add_credit_reference(post, identification)
+      def add_related_reference(post, identification)
         order_id, transaction_id, authorization, security_key = identification.split(';')
 
         add_pair(post, :RelatedVendorTxCode, order_id)
@@ -256,7 +268,9 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_payment_method(post, payment_method, options)
-        if payment_method.respond_to?(:number)
+        if options[:repeat]
+          add_related_reference(post, payment_method)
+        elsif payment_method.respond_to?(:number)
           add_credit_card(post, payment_method)
         else
           add_token_details(post, payment_method, options)
@@ -281,6 +295,7 @@ module ActiveMerchant #:nodoc:
       def add_token_details(post, token, options)
         add_token(post, token)
         add_pair(post, :StoreToken, options[:customer])
+        add_pair(post, :CV2, options[:verification_value])
       end
 
       def add_token(post, token)

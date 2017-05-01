@@ -25,6 +25,17 @@ class RemoteFirstdataE4Test < Test::Unit::TestCase
     assert_success response
   end
 
+  def test_successful_purchase_with_network_tokenization
+    @credit_card = network_tokenization_credit_card('4242424242424242',
+      payment_cryptogram: "BwABB4JRdgAAAAAAiFF2AAAAAAA=",
+      verification_value: nil
+    )
+    assert response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_success response
+    assert_equal 'Transaction Normal - Approved', response.message
+    assert_false response.authorization.blank?
+  end
+
   def test_successful_purchase_with_specified_currency
     options_with_specified_currency = @options.merge({currency: 'GBP'})
     assert response = @gateway.purchase(@amount, @credit_card, options_with_specified_currency)
@@ -215,6 +226,15 @@ class RemoteFirstdataE4Test < Test::Unit::TestCase
     assert_success response
     assert_match(/Transaction Normal/, response.message)
     assert response.authorization
+  end
+
+  def test_verify_credentials
+    assert @gateway.verify_credentials
+
+    gateway = FirstdataE4Gateway.new(login: 'unknown', password: 'unknown')
+    assert !gateway.verify_credentials
+    gateway = FirstdataE4Gateway.new(login: fixtures(:firstdata_e4)[:login], password: 'unknown')
+    assert !gateway.verify_credentials
   end
 
   def test_dump_transcript

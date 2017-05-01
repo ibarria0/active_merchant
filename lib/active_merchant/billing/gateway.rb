@@ -65,10 +65,10 @@ module ActiveMerchant #:nodoc:
       #
       # :incorrect_number - Card number does not comply with ISO/IEC 7812 numbering standard
       # :invalid_number - Card number was not matched by processor
-      # :invalid_expiry_date - Expiry date deos not match correct formatting
+      # :invalid_expiry_date - Expiry date does not match correct formatting
       # :invalid_cvc - Security codes does not match correct format (3-4 digits)
       # :expired_card - Card number is expired
-      # :incorrect_cvc - Secerity code was not matched by the processor
+      # :incorrect_cvc - Security code was not matched by the processor
       # :incorrect_zip - Zip code is not in correct format
       # :incorrect_address - Billing address info was not matched by the processor
       # :incorrect_pin - Card PIN is incorrect
@@ -76,6 +76,10 @@ module ActiveMerchant #:nodoc:
       # :processing_error - Processor error
       # :call_issuer - Transaction requires voice authentication, call issuer
       # :pickup_card - Issuer requests that you pickup the card from merchant
+      # :test_mode_live_card - Card was declined. Request was in test mode, but used a non test card.
+      # :unsupported_feature - Transaction failed due to gateway or merchant
+      #                        configuration not supporting a feature used, such
+      #                        as network tokenization.
 
       STANDARD_ERROR_CODE = {
         :incorrect_number => 'incorrect_number',
@@ -91,7 +95,9 @@ module ActiveMerchant #:nodoc:
         :processing_error => 'processing_error',
         :call_issuer => 'call_issuer',
         :pickup_card => 'pick_up_card',
-        :config_error => 'config_error'
+        :config_error => 'config_error',
+        :test_mode_live_card => 'test_mode_live_card',
+        :unsupported_feature => 'unsupported_feature',
       }
 
       cattr_reader :implementations

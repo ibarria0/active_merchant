@@ -90,22 +90,24 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert_equal false,  response.success?
   end
 
-  def test_authorize_and_auth_reversal
+  def test_authorize_and_void
     assert auth = @gateway.authorize(@amount, @credit_card, @options)
-    assert_equal 'Successful transaction', auth.message
     assert_success auth
-    assert auth.test?
-
-    assert auth_reversal = @gateway.auth_reversal(@amount, auth.authorization)
-    assert_equal 'Successful transaction', auth_reversal.message
-    assert_success auth_reversal
-    assert auth_reversal.test?
+    assert void = @gateway.void(auth.authorization, @options)
+    assert_equal 'Successful transaction', void.message
+    assert_success void
+    assert void.test?
   end
 
-  def test_successful_authorization_and_failed_auth_reversal
-    assert auth_reversal = @gateway.auth_reversal(@amount, "UnknownAuth")
-    assert_failure auth_reversal
-    assert_equal 'One or more fields contains invalid data', auth_reversal.message
+  def test_capture_and_void
+    assert auth = @gateway.authorize(@amount, @credit_card, @options)
+    assert_success auth
+    assert capture = @gateway.capture(@amount, auth.authorization, @options)
+    assert_success capture
+    assert void = @gateway.void(capture.authorization, @options)
+    assert_equal 'Successful transaction', void.message
+    assert_success void
+    assert void.test?
   end
 
   def test_successful_tax_calculation
@@ -132,6 +134,13 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
   def test_successful_purchase_with_billing_address_override
     @options[:billing_address] = address
     @options[:email] = 'override@example.com'
+    assert response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_equal 'Successful transaction', response.message
+    assert_success response
+  end
+
+  def test_successful_purchase_with_long_country_name
+    @options[:billing_address] = address(country: "united states", state: "NC")
     assert response = @gateway.purchase(@amount, @credit_card, @options)
     assert_equal 'Successful transaction', response.message
     assert_success response
@@ -242,6 +251,12 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert_success response
   end
 
+  def test_successful_authorize_with_nonfractional_currency
+    assert response = @gateway.authorize(100, @credit_card, @options.merge(:currency => 'JPY'))
+    assert_equal "1", response.params['amount']
+    assert_success response
+  end
+
   def test_successful_subscription_authorization
     assert response = @gateway.store(@credit_card, @subscription_options)
     assert_equal 'Successful transaction', response.message
@@ -347,4 +362,12 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert response.success?
     assert response.test?
   end
+
+  def test_verify_credentials
+    assert @gateway.verify_credentials
+
+    gateway = CyberSourceGateway.new(login: "an_unknown_login", password: "unknown_password")
+    assert !gateway.verify_credentials
+  end
+
 end

@@ -10,6 +10,7 @@ module ActiveMerchant #:nodoc:
                                   'HU', 'IS', 'IE', 'IT', 'LV', 'LI', 'LT', 'LU', 'MT', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'GB']
 
       self.default_currency    = 'EUR'
+      self.currencies_without_fractions = %w(BIF BYR DJF GNF JPY KMF KRW PYG RWF VND VUV XAF XOF XPF)
       self.supported_cardtypes = [:visa, :master]
 
       self.homepage_url = 'https://www.clearhaus.com'
@@ -121,7 +122,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_amount(post, amount, options)
-        post[:amount]   = amount(amount)
+        post[:amount]   = localized_amount(amount, options[:currency] || default_currency)
         post[:currency] = (options[:currency] || default_currency)
       end
 
@@ -173,7 +174,7 @@ module ActiveMerchant #:nodoc:
           success_from(response),
           message_from(response),
           response,
-          authorization: authorization_from(response),
+          authorization: authorization_from(action, response),
           test: test?,
           error_code: error_code_from(response)
         )
@@ -193,8 +194,15 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def authorization_from(response)
-        response['id']
+      def authorization_from(action, response)
+        id_of_auth_for_capture(action) || response['id']
+      end
+
+      def id_of_auth_for_capture(action)
+        match = action.match(/authorizations\/(.+)\/captures/)
+        return nil unless match
+
+        match.captures.first
       end
 
       def generate_signature(body)

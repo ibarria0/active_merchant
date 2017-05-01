@@ -1,6 +1,8 @@
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class SageGateway < Gateway
+      include Empty
+
       self.display_name = 'http://www.sagepayments.com'
       self.homepage_url = 'Sage Payment Solutions'
       self.live_url = 'https://www.sagepayments.net/cgi-bin'
@@ -90,7 +92,29 @@ module ActiveMerchant #:nodoc:
         vault.unstore(identification, options)
       end
 
+      def supports_scrubbing?
+        true
+      end
+
+      def scrub(transcript)
+         force_utf8(transcript).
+          gsub(%r((M_id=)[^&]*), '\1[FILTERED]').
+          gsub(%r((M_key=)[^&]*), '\1[FILTERED]').
+          gsub(%r((C_cardnumber=)[^&]*), '\1[FILTERED]').
+          gsub(%r((C_cvv=)[^&]*), '\1[FILTERED]').
+          gsub(%r((<ns1:CARDNUMBER>).+(</ns1:CARDNUMBER>)), '\1[FILTERED]\2').
+          gsub(%r((<ns1:M_ID>).+(</ns1:M_ID>)), '\1[FILTERED]\2').
+          gsub(%r((<ns1:M_KEY>).+(</ns1:M_KEY>)), '\1[FILTERED]\2')
+      end
+
       private
+
+      # use the same method as in pay_conex
+      def force_utf8(string)
+        return nil unless string
+        binary = string.encode("BINARY", invalid: :replace, undef: :replace, replace: "?")   # Needed for Ruby 2.0 since #encode is a no-op if the string is already UTF-8. It's not needed for Ruby 2.1 and up since it's not a no-op there.
+        binary.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
+      end
 
       def add_credit_card(post, credit_card)
         post[:C_name]       = credit_card.name
@@ -182,8 +206,8 @@ module ActiveMerchant #:nodoc:
 
       def add_invoice(post, options)
         post[:T_ordernum] = (options[:order_id] || generate_unique_id).slice(0, 20)
-        post[:T_tax] = amount(options[:tax]) unless options[:tax].blank?
-        post[:T_shipping] = amount(options[:shipping]) unless options[:shipping].blank?
+        post[:T_tax] = amount(options[:tax]) unless empty?(options[:tax])
+        post[:T_shipping] = amount(options[:shipping]) unless empty?(options[:shipping])
       end
 
       def add_reference(post, reference)
@@ -204,7 +228,7 @@ module ActiveMerchant #:nodoc:
 
         post[:C_address]    = billing_address[:address1]
         post[:C_city]       = billing_address[:city]
-        post[:C_state]      = billing_address[:state]
+        post[:C_state]      = empty?(billing_address[:state]) ? "Outside of US" : billing_address[:state]
         post[:C_zip]        = billing_address[:zip]
         post[:C_country]    = billing_address[:country]
         post[:C_telephone]  = billing_address[:phone]
