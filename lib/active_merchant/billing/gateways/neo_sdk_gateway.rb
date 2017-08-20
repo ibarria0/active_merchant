@@ -3,7 +3,7 @@ require 'neosdk/neosdk'
 
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
-    class NeoSDKGatewayGateway < Gateway
+    class NeoSDKGateway < Gateway
       self.test_url = 'https://gateway.merchantprocess.net/api/test-v3/api/'
       self.live_url = 'https://gateway12.merchantprocess.net/sdk/api/'
 
