@@ -12,6 +12,7 @@ module NeoSDK
         mpago = MetropagoGateway.new("SANDBOX", "100177", "100177001", "AERT99HY")
         mpago.Culture = "es"
 		@metroPagoGateway ||= mpago
+		p @metroPagoGateway
         return mpago
     end
 
