@@ -539,6 +539,11 @@ neo_gateway:
   terminal_id: YYYYYYY
   secret_key: ZZZZZZZZ
 
+# Working credentials, no need to replace
+neosdk:
+  some_credential: SOMECREDENTIAL
+  another_credential: ANOTHERCREDENTIAL
+
 net_registry:
   login: X
   password: Y
