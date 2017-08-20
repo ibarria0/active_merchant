@@ -6,7 +6,7 @@ module ActiveMerchant #:nodoc:
       self.live_url = "https://api2.checkout.com/v2"
       self.test_url = "https://sandbox.checkout.com/api2/v2"
 
-      self.supported_countries = ['AD', 'AT', 'BE', 'BG', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FO', 'FI', 'FR', 'GB', 'GI', 'GL', 'GR', 'HR', 'HU', 'IE', 'IS', 'IL', 'IT', 'LI', 'LT', 'LU', 'LV', 'MC', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SE', 'SI', 'SM', 'SK', 'SJ', 'TR', 'VA']
+      self.supported_countries = ['AD', 'AE', 'AT', 'BE', 'BG', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FO', 'FI', 'FR', 'GB', 'GI', 'GL', 'GR', 'HR', 'HU', 'IE', 'IS', 'IL', 'IT', 'LI', 'LT', 'LU', 'LV', 'MC', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SE', 'SI', 'SM', 'SK', 'SJ', 'TR', 'VA']
       self.default_currency = "USD"
       self.money_format = :cents
       self.supported_cardtypes = [:visa, :master, :american_express, :diners_club]
@@ -75,7 +75,7 @@ module ActiveMerchant #:nodoc:
       private
 
       def add_invoice(post, money, options)
-        post[:value] = amount(money)
+        post[:value] = localized_amount(money, options[:currency])
         post[:trackId] = options[:order_id]
         post[:currency] = options[:currency] || currency(money)
         post[:descriptor] = {}
@@ -166,7 +166,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def success_from(response)
-        response["responseCode"] == "10000" || response["responseCode"] == "10100"
+        (response["responseCode"] == "10000" && !response["responseMessage"].start_with?("40")) || response["responseCode"] == "10100"
       end
 
       def message_from(succeeded, response)
