@@ -1,5 +1,5 @@
 require 'cgi'
-require 'neosdk/neosdk'
+require 'neo_sdk/neo_sdk'
 
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
