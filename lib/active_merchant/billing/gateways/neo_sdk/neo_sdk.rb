@@ -11,12 +11,10 @@ module NeoSDK
         puts 'RUBY VERSION: ' + RUBY_VERSION.to_s
         mpago = MetropagoGateway.new("SANDBOX", "100177", "100177001", "AERT99HY")
         mpago.Culture = "es"
-		@metroPagoGateway ||= mpago
-		p @metroPagoGateway
         return mpago
     end
 
-    def self.perform_sale(customer,amount)
+    def self.perform_sale(mpago,customer,amount)
  
       tranxRequest = Transaction.new
  
@@ -25,7 +23,7 @@ module NeoSDK
       tranxRequest.Amount = amount
       tranxRequest.OrderTrackingNumber = "777AAAAA"
   
-      tranxMgr = TransactionManager.new(@metroPagoGateway)
+      tranxMgr = TransactionManager.new(mpago)
       responseTranxModel = tranxMgr.Sale(tranxRequest)
   
       puts 'RESULT - Perform Sale:'
@@ -55,13 +53,13 @@ module NeoSDK
     end
 
 
-    def self.save_customer(email,ident)
+    def self.save_customer(mpago,email,ident)
       cust = Customer.new
       cust.Created = DateTime.now.strftime('%m/%d/%Y')
       cust.Email = email
       cust.UniqueIdentifier = ident
   
-      custMgr = CustomerManager.new(@metroPagoGateway)
+      custMgr = CustomerManager.new(mpago)
       resModel = Customer.new
       resModel = custMgr.SaveCustomer(cust)
   
@@ -70,12 +68,12 @@ module NeoSDK
       return resModel
     end
 
-    def self.get_customer_id(identifier)
+    def self.get_customer_id(mpago,identifier)
       #puts customer.instance_variable_get("@firstName")
-      GetCustomerByIdentifier(identifier)
+      GetCustomerByIdentifier(mpago,identifier)
     end
 
-    def self.add_card_to_customer(active_merchant_card,customer)
+    def self.add_card_to_customer(mpago,active_merchant_card,customer)
       card = CreditCard.new
       card.CardholderName = active_merchant_card.name
       card.Status = active_merchant_card.valid? ? "Active" : "Inactive"
@@ -97,7 +95,7 @@ module NeoSDK
       #attach cards to customers
       customer.CreditCards = creditCards
  
-      custMgr = CustomerManager.new(@metroPagoGateway)
+      custMgr = CustomerManager.new(mpago)
       resultCustomer = Customer.new
       resultCustomer = custMgr.UpdateCustomer(customer)
  
@@ -106,7 +104,7 @@ module NeoSDK
       return resultCustomer
     end
 
-    def self.add_account_to_customer(customer)
+    def self.add_account_to_customer(mpago,customer)
       account = CustomerEntity.new
       account.AccountNumber = "001"
       account.CustomerId = customer.getCustomerId #.instance_variable_get("@customerId")
@@ -119,7 +117,7 @@ module NeoSDK
   
       customer.CustomerEntities = accounts
   
-      custMgr = CustomerManager.new(@metroPagoGateway)
+      custMgr = CustomerManager.new(mpago)
       resultCustomer = custMgr.UpdateCustomer(customer)
   
       puts 'RESULT - Add Account To Customer:'
@@ -150,7 +148,7 @@ module NeoSDK
       return resultCustomer
     end
 
-   def self.GetCustomerByIdentifier(identifer)
+   def self.GetCustomerByIdentifier(mpago,identifer)
      custSearch = CustomerSearch.new
      custSearchOpts = CustomerSearchOption.new
  
@@ -163,7 +161,7 @@ module NeoSDK
  
      custSearch.SearchOption = custSearchOpts
  
-     custMgr = CustomerManager.new(@metroPagoGateway)
+     custMgr = CustomerManager.new(mpago)
  
      foundCustomersList = custMgr.SearchCustomer(custSearch)
  
