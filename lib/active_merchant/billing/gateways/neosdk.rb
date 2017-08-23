@@ -1,8 +1,8 @@
 require_relative 'neo_sdk/neo_sdk'
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
-    include NeoSDK
     class NeosdkGateway < Gateway
+      include NeoSDK
       self.test_url = 'https://gateway.merchantprocess.net/api/test-v3/api/'
       self.live_url = 'https://gateway12.merchantprocess.net/sdk/api/'
 
@@ -149,6 +149,8 @@ module ActiveMerchant #:nodoc:
 
       def store(creditcard, options = {})
         gw = NeoSDK.build_sdk
+        p gw
+        p options
         customer = NeoSDK.get_customer_id(gw,options['user_id'])
         if not customer then
             customer = NeoSDK.save_customer(gw,options['user_email'],options['user_id'])
