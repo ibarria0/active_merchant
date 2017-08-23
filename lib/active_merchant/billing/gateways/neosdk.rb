@@ -149,7 +149,9 @@ module ActiveMerchant #:nodoc:
       def store(creditcard, options = {})
         gw = NeoSDK.build_sdk
         customer = NeoSDK.get_customer_id(gw,options['user_id'])
+        p customer
         if not customer then
+            p 'new'
             customer = NeoSDK.save_customer(gw,options['user_email'],options['user_id'])
             customer = NeoSDK.add_account_to_customer(gw,customer)
         end
