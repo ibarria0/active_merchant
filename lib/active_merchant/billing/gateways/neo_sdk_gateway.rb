@@ -1,9 +1,9 @@
-require 'cgi'
 require 'neo_sdk/neo_sdk'
 
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class NeoSDKGateway < Gateway
+      include NeoSDK
       self.test_url = 'https://gateway.merchantprocess.net/api/test-v3/api/'
       self.live_url = 'https://gateway12.merchantprocess.net/sdk/api/'
 
@@ -143,21 +143,19 @@ module ActiveMerchant #:nodoc:
       end
 
       def purchase(money, payment=nil, options={})
-        NeoSDK.build_sdk
-        customer = NeoSDK.get_customer_id(options['user_id'])
-        NeoSDK.perform_sale(customer,money)
+        gw = NeoSDK.build_sdk
+        customer = NeoSDK.get_customer_id(gw,options['user_id'])
+        NeoSDK.perform_sale(gw,customer,money)
       end
 
       def store(creditcard, options = {})
-        NeoSDK.build_sdk
-        customer = NeoSDK.get_customer_id(options['user_id'])
-        p customer
+        gw = NeoSDK.build_sdk
+        customer = NeoSDK.get_customer_id(gw,options['user_id'])
         if not customer then
-            customer = NeoSDK.save_customer(options['user_email'],options['user_id'])
-            customer = NeoSDK.add_account_to_customer(customer)
+            customer = NeoSDK.save_customer(gw,options['user_email'],options['user_id'])
+            customer = NeoSDK.add_account_to_customer(gw,customer)
         end
-        p customer
-        return NeoSDK.add_card_to_customer(creditcard,customer)
+        return NeoSDK.add_card_to_customer(gw,creditcard,customer)
       end
 
       def success_from(response)
