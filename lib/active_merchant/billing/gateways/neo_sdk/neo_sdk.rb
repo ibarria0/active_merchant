@@ -72,7 +72,6 @@ module NeoSDK
       #puts customer.instance_variable_get("@firstName")
       p mpago
       p identifier
-      p GetCustomerByIdentifier
       GetCustomerByIdentifier(mpago,identifier)
     end
 
