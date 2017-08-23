@@ -31,6 +31,7 @@ module NeoSDK
   
       if(responseDetails && responseDetails.getIsSuccess == true)
         puts 'Transaction Processed Successfullly. Transaction Id: ' + responseDetails.getTransactionId
+        return 200
       else
         puts responseDetails.getResponseSummary
       end
