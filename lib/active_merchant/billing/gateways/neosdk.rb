@@ -151,6 +151,7 @@ module ActiveMerchant #:nodoc:
         gw = NeoSDK.build_sdk
         p gw
         p options
+        p NeoSDK
         customer = NeoSDK.get_customer_id(gw,options['user_id'])
         p customer
         if not customer then

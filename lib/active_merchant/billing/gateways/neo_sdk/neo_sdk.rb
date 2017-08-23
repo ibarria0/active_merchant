@@ -70,6 +70,9 @@ module NeoSDK
 
     def self.get_customer_id(mpago,identifier)
       #puts customer.instance_variable_get("@firstName")
+      p mpago
+      p identifier
+      p GetCustomerByIdentifier
       GetCustomerByIdentifier(mpago,identifier)
     end
 
