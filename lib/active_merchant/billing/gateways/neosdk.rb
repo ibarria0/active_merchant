@@ -143,25 +143,16 @@ module ActiveMerchant #:nodoc:
 
       def purchase(money, payment=nil, options={})
         gw = NeoSDK.build_sdk
-        customer = NeoSDK.get_customer_id(gw, options['user_id'])
+        customer = NeoSDK.get_customer_id(gw, options[:user_id])
         NeoSDK.perform_sale(gw, customer,money)
       end
 
       def store(creditcard, options = {})
         gw = NeoSDK.build_sdk
-        p gw
-        p options
-        p options[:user_id]
-        p options['user_id']
-        p NeoSDK
-        customer = NeoSDK.get_customer_id(gw,options['user_id'])
-        p customer
+        customer = NeoSDK.get_customer_id(gw,options[:user_id])
         if not customer then
-            p 'newwwww'
-            customer = NeoSDK.save_customer(gw,options['user_email'],options['user_id'])
-            p 'saved'
+            customer = NeoSDK.save_customer(gw,options[:user_email],options[:user_id])
             customer = NeoSDK.add_account_to_customer(gw,customer)
-            p 'acct'
         end
         return NeoSDK.add_card_to_customer(gw,creditcard,customer)
       end
