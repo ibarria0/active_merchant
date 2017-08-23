@@ -1,9 +1,9 @@
-require_relative 'Entities/customer'
-require_relative 'Gateway/metropago_gateway'
-require_relative 'Managers/customer_manager'
-require_relative 'Entities/response_model'
-require_relative 'TestCases/customer_operations'
-require_relative 'TestCases/transaction_operations'
+require 'active_merchant/billing/gateways/neo_sdk/Entities/customer'
+require 'active_merchant/billing/gateways/neo_sdk/Gateway/metropago_gateway'
+require 'active_merchant/billing/gateways/neo_sdk/Managers/customer_manager'
+require 'active_merchant/billing/gateways/neo_sdk/Entities/response_model'
+require 'active_merchant/billing/gateways/neo_sdk/TestCases/customer_operations'
+require 'active_merchant/billing/gateways/neo_sdk/TestCases/transaction_operations'
 
 module NeoSDK
     def self.build_sdk
