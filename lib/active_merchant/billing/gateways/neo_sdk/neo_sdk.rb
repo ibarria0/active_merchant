@@ -7,9 +7,9 @@ require_relative 'TestCases/transaction_operations'
 
 module NeoSDK
     def self.build_sdk
+        mpago = MetropagoGateway.new("SANDBOX", "100177", "100177001", "AERT99HY")
         puts 'METROPAGO - CLIENT SDK'
         puts 'RUBY VERSION: ' + RUBY_VERSION.to_s
-        mpago = MetropagoGateway.new("SANDBOX", "100177", "100177001", "AERT99HY")
         mpago.Culture = "es"
         return mpago
     end
