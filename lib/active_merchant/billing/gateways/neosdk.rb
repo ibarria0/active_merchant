@@ -1,4 +1,4 @@
-require_relative 'neo_sdk/neo_sdk'
+require 'active_merchant/billing/gateways/neo_sdk'
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class NeosdkGateway < Gateway
