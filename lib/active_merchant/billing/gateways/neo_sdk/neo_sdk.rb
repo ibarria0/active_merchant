@@ -8,8 +8,6 @@ require 'active_merchant/billing/gateways/neo_sdk/TestCases/transaction_operatio
 module NeoSDK
     def self.build_sdk
         mpago = MetropagoGateway.new("SANDBOX", "100177", "100177001", "AERT99HY")
-        puts 'METROPAGO - CLIENT SDK'
-        puts 'RUBY VERSION: ' + RUBY_VERSION.to_s
         mpago.Culture = "es"
         return mpago
     end
@@ -26,31 +24,25 @@ module NeoSDK
       tranxMgr = TransactionManager.new(mpago)
       responseTranxModel = tranxMgr.Sale(tranxRequest)
   
-      puts 'RESULT - Perform Sale:'
       responseDetails = responseTranxModel.getResponseDetails
   
       if(responseDetails && responseDetails.getIsSuccess == true)
-        puts 'Transaction Processed Successfullly. Transaction Id: ' + responseDetails.getTransactionId
         return 200
       else
-        puts responseDetails.getResponseSummary
-      end
-  
-      if(responseDetails.getValidationErrors)
-        vErrors = responseDetails.getValidationErrors
-        if(vErrors.getErrorDetails)
-  
-          vErrors.getErrorDetails.each do |ed|
-  
-            puts "Error Summary:"
-            puts ed.getErrorSummary
-            puts "Error Description: "
-            puts ed.getErrorDescription
-  
-          end
-  
+        if(responseDetails.getValidationErrors)
+           vErrors = responseDetails.getValidationErrors
+           if(vErrors.getErrorDetails)
+             vErrors.getErrorDetails.each do |ed|
+               puts "Error Summary:"
+               puts ed.getErrorSummary
+               puts "Error Description: "
+               puts ed.getErrorDescription
+             end
+           end
         end
+        return 500
       end
+  
     end
 
 
@@ -64,15 +56,11 @@ module NeoSDK
       resModel = Customer.new
       resModel = custMgr.SaveCustomer(cust)
   
-      puts 'RESULT - Save Customer:'
-      puts JSON.dump resModel.to_h
       return resModel
     end
 
     def self.get_customer_id(mpago,identifier)
       #puts customer.instance_variable_get("@firstName")
-      p mpago
-      p identifier
       GetCustomerByIdentifier(mpago,identifier)
     end
 
@@ -102,8 +90,6 @@ module NeoSDK
       resultCustomer = Customer.new
       resultCustomer = custMgr.UpdateCustomer(customer)
  
-      puts 'RESULT - Add Cards To Customer:'
-      puts JSON.dump resultCustomer.to_h
       return resultCustomer
     end
 
@@ -123,19 +109,9 @@ module NeoSDK
       custMgr = CustomerManager.new(mpago)
       resultCustomer = custMgr.UpdateCustomer(customer)
   
-      puts 'RESULT - Add Account To Customer:'
-      puts JSON.pretty_generate resultCustomer.to_h
   
-      puts 'Customer Entity Response:'
       if(resultCustomer.getCustomerEntities[0] && resultCustomer.getCustomerEntities[0].getResponseDetails)
-   
         customerEntityResponse = resultCustomer.getCustomerEntities[0].getResponseDetails
-        puts "Success: "
-        puts customerEntityResponse.getIsSuccess
-  
-        puts "Response Summary: "
-        puts customerEntityResponse.getResponseSummary
-  
         if(customerEntityResponse.getValidationErrors)
           validationErrs = customerEntityResponse.getValidationErrors
           if(validationErrs.getErrorDetails)
