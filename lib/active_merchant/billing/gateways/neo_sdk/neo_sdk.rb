@@ -27,7 +27,7 @@ module NeoSDK
       responseDetails = responseTranxModel.getResponseDetails
   
       if(responseDetails && responseDetails.getIsSuccess == true)
-        return 200
+        return responseDetails
       else
         if(responseDetails.getValidationErrors)
            vErrors = responseDetails.getValidationErrors
@@ -40,7 +40,7 @@ module NeoSDK
              end
            end
         end
-        return 500
+        return responseDetails
       end
   
     end
