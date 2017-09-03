@@ -27,7 +27,6 @@ module NeoSDK
       responseDetails = responseTranxModel.getResponseDetails
   
       return responseDetails
-      end
   
     end
 
