@@ -26,22 +26,7 @@ module NeoSDK
   
       responseDetails = responseTranxModel.getResponseDetails
   
-      if(responseDetails && responseDetails.getIsSuccess == true)
-        return responseDetails
-      else
-        if(responseDetails.getValidationErrors)
-           vErrors = responseDetails.getValidationErrors
-           if(vErrors.getErrorDetails)
-             vErrors.getErrorDetails.each do |ed|
-               puts "Error Summary:"
-               puts ed.getErrorSummary
-               puts "Error Description: "
-               puts ed.getErrorDescription
-               return responseDetails
-             end
-           end
-        end
-        return responseDetails
+      return responseDetails
       end
   
     end
@@ -110,22 +95,6 @@ module NeoSDK
       custMgr = CustomerManager.new(mpago)
       resultCustomer = custMgr.UpdateCustomer(customer)
   
-  
-      if(resultCustomer.getCustomerEntities[0] && resultCustomer.getCustomerEntities[0].getResponseDetails)
-        customerEntityResponse = resultCustomer.getCustomerEntities[0].getResponseDetails
-        if(customerEntityResponse.getValidationErrors)
-          validationErrs = customerEntityResponse.getValidationErrors
-          if(validationErrs.getErrorDetails)
-            validationErrs.getErrorDetails.each do |ed|
-              puts "Error Summary:"
-              puts ed.getErrorSummary
-              puts "Error Description: "
-              puts ed.getErrorDescription
-              return resultCustomer
-            end
-          end
-        end
-      end
       return resultCustomer
     end
 
