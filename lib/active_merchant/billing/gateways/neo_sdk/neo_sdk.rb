@@ -37,6 +37,7 @@ module NeoSDK
                puts ed.getErrorSummary
                puts "Error Description: "
                puts ed.getErrorDescription
+               return responseDetails
              end
            end
         end
@@ -120,6 +121,7 @@ module NeoSDK
               puts ed.getErrorSummary
               puts "Error Description: "
               puts ed.getErrorDescription
+              return resultCustomer
             end
           end
         end
