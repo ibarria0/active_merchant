@@ -153,9 +153,10 @@ module ActiveMerchant #:nodoc:
       end
 
       def store(creditcard, options = {})
+        p "doing test"
+        p @options
+        p test?
         if test? then
-          p "doing test"
-          p @options
           gw = NeoSDK.build_sdk "SANDBOX", @options[:merchant], @options[:terminal_id], @options[:secret_key]
         else
           gw = NeoSDK.build_sdk "PRODUCTION", @options[:merchant], @options[:terminal_id], @options[:secret_key]
