@@ -7,6 +7,10 @@ require 'active_merchant/billing/gateways/neo_sdk/TestCases/transaction_operatio
 
 module NeoSDK
     def self.build_sdk(env,merchant,terminal,secret_key)
+        p env
+        p merchant
+        p terminal
+        p secret_key
         mpago = MetropagoGateway.new(env,merchant,terminal,secret_key)
         mpago.Culture = "es"
         return mpago
