@@ -143,6 +143,9 @@ module ActiveMerchant #:nodoc:
       end
 
       def purchase(money, payment=nil, options={})
+        p "doing test"
+        p @options
+        p test?
         if test? then
           gw = NeoSDK.build_sdk "SANDBOX", @options[:merchant], @options[:terminal_id], @options[:secret_key]
         else
