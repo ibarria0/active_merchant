@@ -39,39 +39,22 @@ class CustomerManager
     #if response object is not nill, and
     # response.ResponseMessage (customer model) is
     # not nill, deserialize it.
-
+    customersList = []
     if (responseModel && responseModel.instance_variable_get("@responseMessage"))
-
       #puts "RESULT-INSIDE: " + responseModel.instance_variable_get("@responseMessage")
-
       #Search Customers returns array of customers from API
       responseMsgArr = responseModel.instance_variable_get("@responseMessage")
 
-      #if(responseMsg.instance_of? Array)
-       # puts "ITS ARRAY!"
-      #else
-       # puts "ITS OBJECT!"
-      #end
-
-      customersList = []
-
       modelParsingHelper = ModelParser.new
-
       objArray = JSON.parse(responseMsgArr)
       objArray.each do |obj|
-
         buffCustomer = modelParsingHelper.ParseCustomerObject(obj)
         if(buffCustomer)
           customersList << buffCustomer
         end
-
       end
-
-
-      end
-
+    end
     return customersList
-
   end
 
 

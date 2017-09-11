@@ -116,7 +116,7 @@ module NeoSDK
  
      if foundCustomersList.any? then
          customer = Customer.new
-         customer = foundCustomersList[0];
+         customer = foundCustomersList[0]
          return customer
      else
          return nil
