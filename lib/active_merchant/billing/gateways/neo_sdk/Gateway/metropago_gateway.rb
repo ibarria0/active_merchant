@@ -13,7 +13,7 @@ class MetropagoGateway
 
     #set gateway API url
     if(envrionment == EnvironmentType::SANDBOX.to_str)
-      @gatewayURL = "https://gateway.merchantprocess.net/api/test-v3/api/"
+        @gatewayURL = "https://gateway.merchantprocess.net/api/test/api/"
       #@gatewayURL = "http://localhost:15927/api/"
 
       #TLS Enabled server
@@ -21,7 +21,7 @@ class MetropagoGateway
 
 
     else if(envrionment == EnvironmentType::PRODUCTION.to_str)
-      @gatewayURL = "https://gateway12.merchantprocess.net/sdk/api/"
+       @gatewayURL = "https://gateway.merchantprocess.net/api/prod/api/"
     else
       raise "Invalid Enviroment"
      end
