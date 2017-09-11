@@ -21,7 +21,7 @@ class MetropagoGateway
 
 
     else if(envrionment == EnvironmentType::PRODUCTION.to_str)
-      @gatewayURL = "http://192.168.1.111/SDKApi/api/"
+      @gatewayURL = "https://gateway12.merchantprocess.net/sdk/api/"
 
     else
       raise "Invalid Enviroment"
