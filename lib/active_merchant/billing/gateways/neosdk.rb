@@ -142,16 +142,12 @@ module ActiveMerchant #:nodoc:
       end
 
       def purchase(money, payment=nil, options={})
-        p @options
-        p test?
         if test? then
           gw = NeoSDK.build_sdk "SANDBOX", @options[:merchant], @options[:terminal_id], @options[:secret_key]
         else
           gw = NeoSDK.build_sdk "PRODUCTION", @options[:merchant], @options[:terminal_id], @options[:secret_key]
         end
-        p gw
         customer = NeoSDK.get_customer_id(gw, options[:user_id])
-        p customer
         NeoSDK.perform_sale(gw, customer,money)
       end
 
