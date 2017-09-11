@@ -114,10 +114,13 @@ module NeoSDK
  
      foundCustomersList = custMgr.SearchCustomer(custSearch)
  
-     customer = Customer.new
-     customer = foundCustomersList[0];
- 
-     return customer
+     if foundCustomersList.any? then
+         customer = Customer.new
+         customer = foundCustomersList[0];
+         return customer
+     else
+         return nil
+     end
    end
 
  
