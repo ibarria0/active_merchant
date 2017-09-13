@@ -53,7 +53,7 @@ module NeoSDK
       card = CreditCard.new
       card.CardholderName = active_merchant_card.name
       card.Status = active_merchant_card.valid? ? "Active" : "Inactive"
-      card.SetExpiration(active_merchant_card.month.to_s, active_merchant_card.year.to_s)
+      card.SetExpiration(sprintf("%.2i", active_merchant_card.month.to_i), active_merchant_card.year.to_s)
       card.Number = active_merchant_card.number
   
       #custom Fields for Card
