@@ -13,15 +13,10 @@ class MetropagoGateway
 
     #set gateway API url
     if(envrionment == EnvironmentType::SANDBOX.to_str)
-        @gatewayURL = "https://gateway.merchantprocess.net/api/test-v3/api/"
-      #@gatewayURL = "http://localhost:15927/api/"
-
-      #TLS Enabled server
-      #@gatewayURL = "https://gateway12.merchantprocess.net/sdk/api/"
-
-
+      @gatewayURL = "https://gateway.merchantprocess.net/api/test-v3/api/"
     else if(envrionment == EnvironmentType::PRODUCTION.to_str)
-       @gatewayURL = "https://gateway.merchantprocess.net/api/prod-v1.0/api/"
+      @gatewayURL = "https://gateway.merchantprocess.net/api/prod-v1.0/api/"
+
     else
       raise "Invalid Enviroment"
      end
@@ -29,13 +24,13 @@ class MetropagoGateway
     end
 
     #Logs enabled?
-    #env = 'development'
-    #config = YAML::load(File.open('Config/application.yml'))[env]
-  # if(config["enable_logs"] != nil && config["enable_logs"] == true)
-    # @enableLogs = true
-   #else
-     #@enableLogs = false
-   #end
+    env = 'development'
+    config = YAML::load(File.open('Config/application.yml'))[env]
+   if(config["enable_logs"] != nil && config["enable_logs"] == true)
+     @enableLogs = true
+   else
+     @enableLogs = false
+   end
 
   end
 

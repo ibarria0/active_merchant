@@ -18,13 +18,31 @@ class TransactionOperations
     @metroPagoGateway = metropaGatewayObj
   end
 
-  def PerformSale(customer,amount)
+  def PerformSale(customerId)
 
     tranxRequest = Transaction.new
+    customer = Customer.new
+
+    #card Info
+    creditCards = []
+    card = CreditCard.new
+    card.Token = "a477e032-9591-4211-b4b6-1e07be6ba010"
+    creditCards << card
+
+    #Account Info
+    accounts = []
+    account = CustomerEntity.new
+    account.Id = "10752"
+    accounts << account
+
+    #customer Info
+    customer.CustomerId = customerId
+    customer.CreditCards = creditCards
+    customer.CustomerEntities = accounts
 
     #Transaction Info
     tranxRequest.CustomerData = customer
-    tranxRequest.Amount = amount
+    tranxRequest.Amount = 1.00
     tranxRequest.OrderTrackingNumber = "777AAAAA"
 
     tranxMgr = TransactionManager.new(@metroPagoGateway)
@@ -38,10 +56,10 @@ class TransactionOperations
       puts 'Transaction Processed Successfullly. Transaction Id: ' + responseDetails.getTransactionId
 
       #example accessing inner models
-      #if(responseTranxModel.getCustomerData)
-      #  customerCards = responseTranxModel.getCustomerData.getCreditCards
-      #  puts customerCards[0].getCardHolder
-      #end
+      if(responseTranxModel.getCustomerData)
+        customerCards = responseTranxModel.getCustomerData.getCreditCards
+        puts customerCards[0].getCardHolder
+      end
 
 
     else
