@@ -22,16 +22,8 @@ class MetropagoGateway
      end
 
     end
-
     #Logs enabled?
-    env = 'development'
-    config = YAML::load(File.open('Config/application.yml'))[env]
-   if(config["enable_logs"] != nil && config["enable_logs"] == true)
      @enableLogs = true
-   else
-     @enableLogs = false
-   end
-
   end
 
   def GatewayURL=(gatewayURL)
