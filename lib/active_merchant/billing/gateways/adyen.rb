@@ -7,7 +7,7 @@ module ActiveMerchant #:nodoc:
       self.test_url = 'https://pal-test.adyen.com/pal/servlet/Payment/v18'
       self.live_url = 'https://pal-live.adyen.com/pal/servlet/Payment/v18'
 
-      self.supported_countries = ['AD','AE','AF','AG','AI','AL','AM','AO','AQ','AR','AS','AT','AU','AW','AX','AZ','BA','BB','BD','BE','BF','BG','BH','BI','BJ','BL','BM','BN','BO','BQ','BR','BS','BT','BV','BW','BY','BZ','CA','CC','CD','CF','CG','CH','CI','CK','CL','CM','CN','CO','CR','CU','CV','CW','CX','CY','CZ','DE','DJ','DK','DM','DO','DZ','EC','EE','EG','EH','ER','ES','ET','FI','FJ','FK','FM','FO','FR','GA','GB','GD','GE','GF','GG','GH','GI','GL','GM','GN','GP','GQ','GR','GS','GT','GU','GW','GY','HK','HM','HN','HR','HT','HU','ID','IE','IL','IM','IN','IO','IQ','IR','IS','IT','JE','JM','JO','JP','KE','KG','KH','KI','KM','KN','KP','KR','KW','KY','KZ','LA','LB','LC','LI','LK','LR','LS','LT','LU','LV','LY','MA','MC','MD','ME','MF','MG','MH','MK','ML','MM','MN','MO','MP','MQ','MR','MS','MT','MU','MV','MW','MX','MY','MZ','NA','NC','NE','NF','NG','NI','NL','NO','NP','NR','NU','NZ','OM','PA','PE','PF','PG','PH','PK','PL','PM','PN','PR','PS','PT','PW','PY','QA','RE','RO','RS','RU','RW','SA','SB','SC','SD','SE','SG','SH','SI','SJ','SK','SL','SM','SN','SO','SR','SS','ST','SV','SX','SY','SZ','TC','TD','TF','TG','TH','TJ','TK','TL','TM','TN','TO','TR','TT','TV','TW','TZ','UA','UG','UM','US','UY','UZ','VA','VC','VE','VG','VI','VN','VU','WF','WS','YE','YT','ZA','ZM','ZW']
+      self.supported_countries = ['AT','AU','BE','BG','BR','CH','CY','CZ','DE','DK','EE','ES','FI','FR','GB','GI','GR','HK','HU','IE','IS','IT','LI','LT','LU','LV','MC','MT','MX','NL','NO','PL','PT','RO','SE','SG','SK','SI','US']
       self.default_currency = 'USD'
       self.supported_cardtypes = [:visa, :master, :american_express, :diners_club, :jcb, :dankort, :maestro,  :discover]
 
@@ -45,6 +45,7 @@ module ActiveMerchant #:nodoc:
         add_invoice(post, money, options)
         add_payment(post, payment)
         add_extra_data(post, options)
+        add_shopper_interaction(post,payment,options)
         add_address(post, options)
         commit('authorise', post)
       end
@@ -97,17 +98,21 @@ module ActiveMerchant #:nodoc:
         post[:selectedBrand] = options[:selected_brand] if options[:selected_brand]
         post[:deliveryDate] = options[:delivery_date] if options[:delivery_date]
         post[:merchantOrderReference] = options[:merchant_order_reference] if options[:merchant_order_reference]
-        post[:shopperInteraction] = options[:shopper_interaction] if options[:shopper_interaction]
+      end
+
+      def add_shopper_interaction(post, payment, options={})
+        shopper_interaction = payment.verification_value ?  "Ecommerce" : "ContAuth"
+        post[:shopperInteraction] = options[:shopper_interaction] || shopper_interaction
       end
 
       def add_address(post, options)
         return unless post[:card] && post[:card].kind_of?(Hash)
-        if address = options[:billing_address] || options[:address]
+        if (address = options[:billing_address] || options[:address]) && address[:country]
           post[:card][:billingAddress] = {}
-          post[:card][:billingAddress][:street] = address[:address1] if address[:address1]
-          post[:card][:billingAddress][:houseNumberOrName] = address[:address2] if address[:address2]
+          post[:card][:billingAddress][:street] = address[:address1] || 'N/A'
+          post[:card][:billingAddress][:houseNumberOrName] = address[:address2] || 'N/A'
           post[:card][:billingAddress][:postalCode] = address[:zip] if address[:zip]
-          post[:card][:billingAddress][:city] = address[:city] if address[:city]
+          post[:card][:billingAddress][:city] = address[:city] || 'N/A'
           post[:card][:billingAddress][:stateOrProvince] = address[:state] if address[:state]
           post[:card][:billingAddress][:country] = address[:country] if address[:country]
         end
@@ -138,13 +143,14 @@ module ActiveMerchant #:nodoc:
           number: payment.number,
           cvc: payment.verification_value
         }
+
         card.delete_if{|k,v| v.blank? }
-        requires!(card, :expiryMonth, :expiryYear, :holderName, :number, :cvc)
+        requires!(card, :expiryMonth, :expiryYear, :holderName, :number)
         post[:card] = card
       end
 
       def add_references(post, authorization, options = {})
-        post[:originalReference] = authorization
+        post[:originalReference] = psp_reference_from(authorization)
         post[:reference] = options[:order_id]
       end
 
@@ -169,7 +175,7 @@ module ActiveMerchant #:nodoc:
           success,
           message_from(action, response),
           response,
-          authorization: authorization_from(response),
+          authorization: authorization_from(action, parameters, response),
           test: test?,
           error_code: success ? nil : error_code_from(response)
         )
@@ -207,8 +213,8 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def authorization_from(response)
-        response['pspReference']
+      def authorization_from(action, parameters, response)
+        [parameters[:originalReference], response['pspReference']].compact.join("#").presence
       end
 
       def init_post(options = {})
@@ -221,6 +227,10 @@ module ActiveMerchant #:nodoc:
 
       def error_code_from(response)
         STANDARD_ERROR_CODE_MAPPING[response['errorCode']]
+      end
+
+      def psp_reference_from(authorization)
+        authorization.nil? ? nil : authorization.split("#").first
       end
 
     end

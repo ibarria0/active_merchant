@@ -22,7 +22,8 @@ class RemoteAdyenTest < Test::Unit::TestCase
       shopper_email: "john.smith@test.com",
       shopper_ip: "77.110.174.153",
       shopper_reference: "John Smith",
-      :billing_address => address(),
+      billing_address: address(),
+      order_id: "123"
     }
   end
 
@@ -40,6 +41,14 @@ class RemoteAdyenTest < Test::Unit::TestCase
 
   def test_successful_purchase
     response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_success response
+    assert_equal '[capture-received]', response.message
+  end
+
+  def test_successful_purchase_no_cvv
+    credit_card = @credit_card
+    credit_card.verification_value = nil
+    response = @gateway.purchase(@amount, credit_card, @options)
     assert_success response
     assert_equal '[capture-received]', response.message
   end
@@ -165,7 +174,7 @@ class RemoteAdyenTest < Test::Unit::TestCase
     card = credit_card('4242424242424242', month: 16)
     assert response = @gateway.purchase(@amount, card, @options)
     assert_failure response
-    assert_equal 'Expiry month should be between 1 and 12 inclusive Card', response.message
+    assert_equal 'Expiry month should be between 1 and 12 inclusive', response.message
   end
 
   def test_invalid_expiry_year_for_purchase
@@ -186,22 +195,19 @@ class RemoteAdyenTest < Test::Unit::TestCase
     @options[:billing_address].delete(:address1)
     @options[:billing_address].delete(:address2)
     response = @gateway.authorize(@amount, @credit_card, @options)
-    assert_failure response
-    assert_match Gateway::STANDARD_ERROR_CODE[:incorrect_address], response.error_code
+    assert_success response
   end
 
   def test_missing_city_for_purchase
     @options[:billing_address].delete(:city)
     response = @gateway.authorize(@amount, @credit_card, @options)
-    assert_failure response
-    assert_match Gateway::STANDARD_ERROR_CODE[:incorrect_address], response.error_code
+    assert_success response
   end
 
   def test_missing_house_number_or_name_for_purchase
     @options[:billing_address].delete(:address2)
     response = @gateway.authorize(@amount, @credit_card, @options)
-    assert_failure response
-    assert_match Gateway::STANDARD_ERROR_CODE[:incorrect_address], response.error_code
+    assert_success response
   end
 
   def test_invalid_country_for_purchase
