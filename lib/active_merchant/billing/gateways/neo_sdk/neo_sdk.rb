@@ -22,11 +22,7 @@ module NeoSDK
       tranxRequest.OrderTrackingNumber = "777AAAAA"
   
       tranxMgr = TransactionManager.new(mpago)
-      responseTranxModel = tranxMgr.Sale(tranxRequest)
-  
-      responseDetails = responseTranxModel.getResponseDetails
-  
-      return responseDetails
+      return tranxMgr.Sale(tranxRequest)
   
     end
 
