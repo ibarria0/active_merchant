@@ -2,8 +2,6 @@ require_relative '../Helpers/jso_nable'
 class Transaction < JSONable
 
   def initialize(h = nil)
-    p h
-
     if(h != nil)
 
       h.each {
