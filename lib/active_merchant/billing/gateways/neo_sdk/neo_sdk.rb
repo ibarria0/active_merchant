@@ -12,9 +12,21 @@ module NeoSDK
         return mpago
     end
 
-    def self.perform_sale(mpago,customer,amount)
+    def self.perform_sale(mpago,customer_id,cc_token,amount)
  
       tranxRequest = Transaction.new
+
+      customer = Customer.new
+      customer.CustomerId = customer_id
+
+      if cc_token then
+        #card Info
+        credit_cards = []
+        card = CreditCard.new
+        card.Token = cc_token
+        credit_cards << card
+        customer.CreditCards = credit_cards
+      end
  
       #Transaction Info
       tranxRequest.CustomerData = customer
