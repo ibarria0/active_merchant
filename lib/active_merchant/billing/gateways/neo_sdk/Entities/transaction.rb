@@ -95,6 +95,9 @@ class Transaction < JSONable
     @thirdPartyStatus = thirdPartyStatus
   end
 
+  def success?
+    (getResponseDetails != nil and getResponseDetails.getIsSuccess == true)
+  end
 
   #Getters
 

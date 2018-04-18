@@ -16,18 +16,20 @@ module NeoSDK
  
       tranxRequest = Transaction.new
 
-      customer = Customer.new
-      customer.CustomerId = customer_id
-
       if cc_token then
+        customer = Customer.new
+        customer.UniqueIdentifier = customer_id
+
         #card Info
         credit_cards = []
         card = CreditCard.new
         card.Token = cc_token
         credit_cards << card
         customer.CreditCards = credit_cards
+      else
+        customer = customer_id
       end
- 
+
       #Transaction Info
       tranxRequest.CustomerData = customer
       tranxRequest.Amount = amount

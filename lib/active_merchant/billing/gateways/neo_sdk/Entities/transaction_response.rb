@@ -44,6 +44,10 @@ class TransactionResponse < JSONable
     @isSuccess = isSuccess
   end
 
+  def success?
+    getIsSuccess == true
+  end
+
   #Getters
   def getIsSuccess
     return @isSuccess

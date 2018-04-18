@@ -21,7 +21,7 @@ module ActiveMerchant #:nodoc:
       ]
 
       STANDARD_ERROR_CODE_MAPPING = {
-        #"00" => "Ok , or Approved",
+        "00" => "Success",
         "01" => STANDARD_ERROR_CODE[:call_issuer],
         "02" => STANDARD_ERROR_CODE[:call_issuer],
         "03" => "Invalid Merchant",
@@ -141,14 +141,18 @@ module ActiveMerchant #:nodoc:
         super
       end
 
-      def purchase(money, payment=nil, options={})
+      def purchase(money, cc_token=nil, options={})
         if test? then
           gw = NeoSDK.build_sdk "SANDBOX", @options[:merchant], @options[:terminal_id], @options[:secret_key]
         else
           gw = NeoSDK.build_sdk "PRODUCTION", @options[:merchant], @options[:terminal_id], @options[:secret_key]
         end
-        customer = NeoSDK.get_customer_id(gw, options[:user_id])
-        NeoSDK.perform_sale(gw, customer,money)
+        if cc_token then
+          NeoSDK.perform_sale(gw, options[:user_id], cc_token, money)
+        else
+          customer = NeoSDK.get_customer_id(gw, options[:user_id])
+          NeoSDK.perform_sale(gw, customer, nil, money)
+        end
       end
 
       def store(creditcard, options = {})
@@ -157,7 +161,7 @@ module ActiveMerchant #:nodoc:
         else
           gw = NeoSDK.build_sdk "PRODUCTION", @options[:merchant], @options[:terminal_id], @options[:secret_key]
         end
-        customer = NeoSDK.get_customer_id(gw,options[:user_id])
+        customer = NeoSDK.get_customer_id(gw, options[:user_id])
         if not customer then
             customer = NeoSDK.save_customer(gw,options[:user_email],options[:user_id])
             customer = NeoSDK.add_account_to_customer(gw,customer)
