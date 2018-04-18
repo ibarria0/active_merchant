@@ -17,9 +17,7 @@ module NeoSDK
       tranxRequest = Transaction.new
 
       if cc_token then
-        customer = Customer.new
-        customer.UniqueIdentifier = customer_id
-
+        customer = get_customer_id(mpago,customer_id)
         #card Info
         credit_cards = []
         card = CreditCard.new
