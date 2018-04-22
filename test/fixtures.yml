@@ -122,6 +122,12 @@ cams:
   username: testintegrationc
   password: password9
 
+# Working credentials, no need to replace
+card_connect:
+  merchant_id: "496160873888"
+  username: testing
+  password: testing123
+
 #Username/Password given in sign up email. Not MMS credentials
 card_save:
   login: merchant_id
@@ -134,6 +140,12 @@ card_stream:
 # Working credentials, no need to replace
 cardknox:
   api_key: ActiveMerchant_Test
+
+# Working credentials, no need to replace
+cardprocess:
+  user_id: 8a8294174e735d0c014e78beb6c5154f
+  password: cTZjAm9c87
+  entity_id: 8a8294174e735d0c014e78beb6b9154b
 
 # Cashnet doesn't provide public testing data
 cashnet:
@@ -519,6 +531,10 @@ money_movers:
   login: demo
   password: password
 
+mundipagg:
+  api_key: api_key
+  gateway_id: gateway_id
+
 # Working credentials, no need to replace
 nab_transact:
   login: ABC0001
@@ -663,7 +679,7 @@ payex:
 # Working credentials, no need to replace
 payflow:
   login: 'spreedlyIntegrations'
-  password: 'y9q)(j7H'
+  password: 'L9DjqEKjXCkU'
   partner: 'PayPal'
 
 payflow_uk:
@@ -674,6 +690,10 @@ payflow_uk:
 payment_express:
   login: LOGIN
   password: PASSWORD
+
+paymentez:
+  application_code: APPCODE
+  app_key: APPKEY
 
 paymill:
   private_key: a9580be4a7b9d0151a3da88c6c935ce0
@@ -1053,6 +1073,10 @@ safe_charge:
   client_login_id: 'SpreedlyTestTRX'
   client_password: '5Jp5xKmgqY'
 
+safe_charge_three_ds:
+  client_login_id: 'SpreedlyManTestTRX'
+  client_password: 'iGx9DQQHQG'
+
 sage:
   login: 214282982451
   password: 'Z5W2S8J7X8T5'
@@ -1104,16 +1128,6 @@ stripe:
 # Working credentials, no need to replace
 stripe_destination:
   stripe_user_id: "acct_17FRNfIPBJTitsen"
-
-# Used only for remote tests that use EMV credit card mocks
-stripe_emv_uk:
-  login:
-  fee_refund_login:
-
-# Used only for remote tests that use EMV credit card mocks
-stripe_emv_us:
-  login:
-  fee_refund_login:
 
 # Externally verified bank account for testing
 stripe_verified_bank_account:
