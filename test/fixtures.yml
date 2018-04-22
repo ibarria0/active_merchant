@@ -540,11 +540,6 @@ neo_gateway:
   terminal_id: YYYYYYY
   secret_key: ZZZZZZZZ
 
-# Working credentials, no need to replace
-neosdk:
-  some_credential: SOMECREDENTIAL
-  another_credential: ANOTHERCREDENTIAL
-
 net_registry:
   login: X
   password: Y
@@ -1215,6 +1210,10 @@ visanet_peru:
 webpay:
   login: "test_secret_eHn4TTgsGguBcW764a2KA8Yd"
 
+neosdk:
+  merchant: 11111
+  terminal_id: 111111
+  secret_key: 123123
 # Working test credentials, no need to replace
 wepay:
   client_id: "44716"
