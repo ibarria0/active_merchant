@@ -43,7 +43,8 @@ module ActiveMerchant #:nodoc:
         'call_issuer' => STANDARD_ERROR_CODE[:call_issuer],
         'processing_error' => STANDARD_ERROR_CODE[:processing_error],
         'incorrect_pin' => STANDARD_ERROR_CODE[:incorrect_pin],
-        'test_mode_live_card' => STANDARD_ERROR_CODE[:test_mode_live_card]
+        'test_mode_live_card' => STANDARD_ERROR_CODE[:test_mode_live_card],
+        'pickup_card' => STANDARD_ERROR_CODE[:pickup_card]
       }
 
       BANK_ACCOUNT_HOLDER_TYPE_MAPPING = {
@@ -127,6 +128,7 @@ module ActiveMerchant #:nodoc:
         else
           add_application_fee(post, options)
           add_amount(post, money, options)
+          add_exchange_rate(post, options)
           commit(:post, "charges/#{CGI.escape(authorization)}/capture", post, options)
         end
       end
@@ -149,10 +151,10 @@ module ActiveMerchant #:nodoc:
         MultiResponse.run(:first) do |r|
           r.process { commit(:post, "charges/#{CGI.escape(identification)}/refunds", post, options) }
 
-          return r unless options[:refund_fee_amount]
-
-          r.process { fetch_application_fees(identification, options) }
-          r.process { refund_application_fee(options[:refund_fee_amount], application_fee_from_response(r.responses.last), options) }
+          if options[:refund_fee_amount] && options[:refund_fee_amount].to_s != '0'
+            r.process { fetch_application_fee(identification, options) }
+            r.process { refund_application_fee(options[:refund_fee_amount].to_i, application_fee_from_response(r.responses.last), options) }
+          end
         end
       end
 
@@ -166,9 +168,7 @@ module ActiveMerchant #:nodoc:
 
       def application_fee_from_response(response)
         return unless response.success?
-
-        application_fees = response.params["data"].select { |fee| fee["object"] == "application_fee" }
-        application_fees.first["id"] unless application_fees.empty?
+        response.params["application_fee"] unless response.params["application_fee"].empty?
       end
 
       def refund_application_fee(money, identification, options = {})
@@ -176,9 +176,11 @@ module ActiveMerchant #:nodoc:
 
         post = {}
         add_amount(post, money, options)
-        options.merge!(:key => @fee_refund_api_key)
+        options.merge!(:key => @fee_refund_api_key) if @fee_refund_api_key
+        options.delete(:stripe_account)
 
-        commit(:post, "application_fees/#{CGI.escape(identification)}/refund", post, options)
+        refund_fee = commit(:post, "application_fees/#{CGI.escape(identification)}/refunds", post, options)
+        application_fee_response!(refund_fee, "Application fee could not be refunded: #{refund_fee.message}")
       end
 
       # Note: creating a new credit card will not change the customer's existing default credit card (use :set_default => true)
@@ -319,6 +321,7 @@ module ActiveMerchant #:nodoc:
 
         add_metadata(post, options)
         add_application_fee(post, options)
+        add_exchange_rate(post, options)
         add_destination(post, options)
         post
       end
@@ -333,8 +336,16 @@ module ActiveMerchant #:nodoc:
         post[:application_fee] = options[:application_fee] if options[:application_fee]
       end
 
+      def add_exchange_rate(post, options)
+        post[:exchange_rate] = options[:exchange_rate] if options[:exchange_rate]
+      end
+
       def add_destination(post, options)
-        post[:destination] = options[:destination] if options[:destination]
+        if options[:destination]
+          post[:destination] = {}
+          post[:destination][:account] = options[:destination]
+          post[:destination][:amount] = options[:destination_amount] if options[:destination_amount]
+        end
       end
 
       def add_expand_parameters(post, options)
@@ -371,7 +382,7 @@ module ActiveMerchant #:nodoc:
 
       def add_statement_address(post, options)
         return unless statement_address = options[:statement_address]
-        return unless [:address1, :city, :zip, :state].all? { |key| statement_address[key].present? } 
+        return unless [:address1, :city, :zip, :state].all? { |key| statement_address[key].present? }
 
         post[:statement_address] = {}
         post[:statement_address][:line1] = statement_address[:address1]
@@ -461,10 +472,15 @@ module ActiveMerchant #:nodoc:
         post[:metadata][:card_read_method] = creditcard.read_method if creditcard.respond_to?(:read_method)
       end
 
-      def fetch_application_fees(identification, options = {})
+      def fetch_application_fee(identification, options = {})
         options.merge!(:key => @fee_refund_api_key)
 
-        commit(:get, "application_fees?charge=#{identification}", nil, options)
+        fetch_charge = commit(:get, "charges/#{CGI.escape(identification)}", nil, options)
+        application_fee_response!(fetch_charge, "Application fee id could not be retrieved: #{fetch_charge.message}")
+      end
+
+      def application_fee_response!(response, message)
+        response.success? ? response : Response.new(false, message)
       end
 
       def parse(body)

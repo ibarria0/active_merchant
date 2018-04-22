@@ -102,7 +102,7 @@ module ActiveMerchant #:nodoc:
         add_additional_data(post, options)
         add_customer_data(post, payment, options)
         add_address(post, options)
-        post[:binary_mode] = true
+        post[:binary_mode] = (options[:binary_mode].nil? ? true : options[:binary_mode])
         post
       end
 
@@ -210,7 +210,7 @@ module ActiveMerchant #:nodoc:
         if action == "refund"
           response["error"].nil?
         else
-          ["active", "approved", "authorized", "cancelled"].include?(response["status"])
+          ["active", "approved", "authorized", "cancelled", "in_process"].include?(response["status"])
         end
       end
 

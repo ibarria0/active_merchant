@@ -1,7 +1,5 @@
 require 'active_merchant/billing/gateways/migs/migs_codes'
 
-require 'openssl' # Used in add_secure_hash
-
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class MigsGateway < Gateway
@@ -204,6 +202,18 @@ module ActiveMerchant #:nodoc:
 
       def test?
         @options[:login].start_with?('TEST')
+      end
+
+      def supports_scrubbing?
+        true
+      end
+
+      def scrub(transcript)
+        transcript.
+          gsub(%r((&?CardNum=)\d*(&?)), '\1[FILTERED]\2').
+          gsub(%r((&?CardSecurityCode=)\d*(&?)), '\1[FILTERED]\2').
+          gsub(%r((&?AccessCode=)[^&]*(&?)), '\1[FILTERED]\2').
+          gsub(%r((&?Password=)[^&]*(&?)), '\1[FILTERED]\2')
       end
 
       private

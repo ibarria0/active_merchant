@@ -611,18 +611,19 @@ class StripeTest < Test::Unit::TestCase
   def test_successful_refund_with_refund_fee_amount
     s = sequence("request")
     @gateway.expects(:ssl_request).returns(successful_partially_refunded_response).in_sequence(s)
-    @gateway.expects(:ssl_request).returns(successful_application_fee_list_response).in_sequence(s)
-    @gateway.expects(:ssl_request).returns(successful_refunded_application_fee_response).in_sequence(s)
+    @gateway.expects(:ssl_request).returns(successful_fetch_application_fee_response).in_sequence(s)
+    @gateway.expects(:ssl_request).returns(successful_partially_refunded_application_fee_response).in_sequence(s)
 
     assert response = @gateway.refund(@refund_amount, 'ch_test_charge', :refund_fee_amount => 100)
     assert_success response
   end
 
+  # What is the significance of this??? it's to test that the first response is used as primary. so identical to above with an extra assertion
   def test_refund_with_fee_response_gives_a_charge_authorization
     s = sequence("request")
     @gateway.expects(:ssl_request).returns(successful_partially_refunded_response).in_sequence(s)
-    @gateway.expects(:ssl_request).returns(successful_application_fee_list_response).in_sequence(s)
-    @gateway.expects(:ssl_request).returns(successful_refunded_application_fee_response).in_sequence(s)
+    @gateway.expects(:ssl_request).returns(successful_fetch_application_fee_response).in_sequence(s)
+    @gateway.expects(:ssl_request).returns(successful_partially_refunded_application_fee_response).in_sequence(s)
 
     assert response = @gateway.refund(@refund_amount, 'ch_test_charge', :refund_fee_amount => 100)
     assert_success response
@@ -632,17 +633,17 @@ class StripeTest < Test::Unit::TestCase
   def test_unsuccessful_refund_with_refund_fee_amount_when_application_fee_id_not_found
     s = sequence("request")
     @gateway.expects(:ssl_request).returns(successful_partially_refunded_response).in_sequence(s)
-    @gateway.expects(:ssl_request).returns(unsuccessful_application_fee_list_response).in_sequence(s)
+    @gateway.expects(:ssl_request).returns(unsuccessful_fetch_application_fee_response).in_sequence(s)
 
     assert response = @gateway.refund(@refund_amount, 'ch_test_charge', :refund_fee_amount => 100)
     assert_failure response
-    assert_match(/^Application fee id could not be found/, response.message)
+    assert_match(/^Application fee id could not be retrieved/, response.message)
   end
 
   def test_unsuccessful_refund_with_refund_fee_amount_when_refunding_application_fee
     s = sequence("request")
     @gateway.expects(:ssl_request).returns(successful_partially_refunded_response).in_sequence(s)
-    @gateway.expects(:ssl_request).returns(successful_application_fee_list_response).in_sequence(s)
+    @gateway.expects(:ssl_request).returns(successful_fetch_application_fee_response).in_sequence(s)
     @gateway.expects(:ssl_request).returns(generic_error_response).in_sequence(s)
 
     assert response = @gateway.refund(@refund_amount, 'ch_test_charge', :refund_fee_amount => 100)
@@ -708,6 +709,17 @@ class StripeTest < Test::Unit::TestCase
     assert_failure response
 
     assert_equal Gateway::STANDARD_ERROR_CODE[:call_issuer], response.error_code
+    refute response.test? # unsuccessful request defaults to live
+    assert_equal 'ch_test_charge', response.authorization
+  end
+
+  def test_declined_request_advanced_pickup_card_code
+    @gateway.expects(:ssl_request).returns(declined_pickup_card_purchase_response)
+
+    assert response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_failure response
+
+    assert_equal Gateway::STANDARD_ERROR_CODE[:pickup_card], response.error_code
     refute response.test? # unsuccessful request defaults to live
     assert_equal 'ch_test_charge', response.authorization
   end
@@ -841,11 +853,35 @@ class StripeTest < Test::Unit::TestCase
     end.respond_with(successful_capture_response)
   end
 
+  def test_exchange_rate_is_submitted_for_purchase
+    stub_comms(@gateway, :ssl_request) do
+      @gateway.purchase(@amount, @credit_card, @options.merge({:exchange_rate => 0.96251}))
+    end.check_request do |method, endpoint, data, headers|
+      assert_match(/exchange_rate=0.96251/, data)
+    end.respond_with(successful_purchase_response)
+  end
+
+  def test_exchange_rate_is_submitted_for_capture
+    stub_comms(@gateway, :ssl_request) do
+      @gateway.capture(@amount, "ch_test_charge", @options.merge({:exchange_rate => 0.96251}))
+    end.check_request do |method, endpoint, data, headers|
+      assert_match(/exchange_rate=0.96251/, data)
+    end.respond_with(successful_capture_response)
+  end
+
   def test_destination_is_submitted_for_purchase
     stub_comms(@gateway, :ssl_request) do
       @gateway.purchase(@amount, @credit_card, @options.merge({:destination => 'subaccountid'}))
     end.check_request do |method, endpoint, data, headers|
-      assert_match(/destination=subaccountid/, data)
+      assert_match(/destination\[account\]=subaccountid/, data)
+    end.respond_with(successful_purchase_response)
+  end
+
+  def test_destination_amount_is_submitted_for_purchase
+    stub_comms(@gateway, :ssl_request) do
+      @gateway.purchase(@amount, @credit_card, @options.merge({:destination => 'subaccountid', :destination_amount => @amount - 20}))
+    end.check_request do |method, endpoint, data, headers|
+      assert_match(/destination\[amount\]=#{@amount - 20}/, data)
     end.respond_with(successful_purchase_response)
   end
 
@@ -1939,52 +1975,55 @@ class StripeTest < Test::Unit::TestCase
     RESPONSE
   end
 
-  def successful_refunded_application_fee_response
+  def successful_partially_refunded_application_fee_response
     <<-RESPONSE
     {
-      "id": "fee_id",
-      "object": "application_fee",
-      "created": 1375375417,
-      "livemode": false,
+      "id": "fr_C8qmJKrZVMTjjF",
+      "object": "fee_refund",
       "amount": 10,
+      "balance_transaction": "txn_1BkZ4uAWOtgoysognvusG5N5",
+      "created": 1516027008,
       "currency": "usd",
-      "user": "acct_id",
-      "user_email": "acct_id",
-      "application": "ca_application",
-      "charge": "ch_test_charge",
-      "refunded": false,
-      "amount_refunded": 10
+      "fee": "fee_1BkZ4rIPBJTitsenGWcxYWCZ",
+      "metadata": {}
     }
     RESPONSE
   end
 
-  def successful_application_fee_list_response
+  def successful_fetch_application_fee_response
     <<-RESPONSE
     {
-      "object": "list",
-      "count": 2,
-      "url": "/v1/application_fees",
-      "data": [
-        {
-          "object": "application_fee",
-          "id": "application_fee_id"
-        },
-        {
-          "object": "another_fee",
-          "id": "another_fee_id"
-        }
-      ]
+      "id": "ch_1Bja3MIPBJTitsenv28Gy6iN",
+      "object": "charge",
+      "amount": 100,
+      "amount_refunded": 100,
+      "application": "ca_6E9gvTfZGEMknxpoHhC8xoeyMit55FAV",
+      "application_fee": "fee_1Bja3MIPBJTitsenKqV8Hc6R",
+      "balance_transaction": "txn_1Bja3OIPBJTitsenJ5amtW58",
+      "captured": true,
+      "created": 1515792428,
+      "currency": "usd",
+      "customer": null,
+      "description": "ActiveMerchant Test Purchase",
+      "destination": null,
+      "dispute": null,
+      "failure_code": null,
+      "failure_message": null,
+      "fraud_details": {},
+      "invoice": null,
+      "livemode": false
     }
     RESPONSE
   end
 
-  def unsuccessful_application_fee_list_response
+  def unsuccessful_fetch_application_fee_response
     <<-RESPONSE
     {
-      "object": "list",
-      "count": 0,
-      "url": "/v1/application_fees",
-      "data": []
+      "error": {
+        "type": "invalid_request_error",
+        "message": "No such charge: bad_auth",
+        "param": "id"
+      }
     }
     RESPONSE
   end
@@ -2023,6 +2062,20 @@ class StripeTest < Test::Unit::TestCase
         "type": "card_error",
         "code": "card_declined",
         "decline_code": "call_issuer",
+        "charge": "ch_test_charge"
+      }
+    }
+    RESPONSE
+  end
+
+  def declined_pickup_card_purchase_response
+    <<-RESPONSE
+    {
+      "error": {
+        "message": "Your card was declined.",
+        "type": "card_error",
+        "code": "card_declined",
+        "decline_code": "pickup_card",
         "charge": "ch_test_charge"
       }
     }
