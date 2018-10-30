@@ -13,7 +13,7 @@ class MetropagoGateway
 
     #set gateway API url
     if(envrionment == EnvironmentType::SANDBOX.to_str)
-      @gatewayURL = "https://gateway.merchantprocess.net/api/test-v3/api/"
+      @gatewayURL = "http://securegateway.merchantprocess.net/NeogatewayApi_Test/api/"
     else if(envrionment == EnvironmentType::PRODUCTION.to_str)
       @gatewayURL = "https://gateway.merchantprocess.net/api/prod-v1.0/api/"
 
