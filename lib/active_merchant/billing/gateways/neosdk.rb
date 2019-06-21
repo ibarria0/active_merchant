@@ -147,6 +147,13 @@ module ActiveMerchant #:nodoc:
         else
           gw = NeoSDK.build_sdk "PRODUCTION", @options[:merchant], @options[:terminal_id], @options[:secret_key]
         end
+        ### save customer if not exist
+        customer = NeoSDK.get_customer_id(gw, options[:user_id])
+        if not customer then
+            customer = NeoSDK.save_customer(gw,options[:user_email],options[:user_id])
+            customer = NeoSDK.add_account_to_customer(gw,customer)
+        end
+        #######
         if cc_token then
           NeoSDK.perform_sale(gw, options[:user_id], cc_token, money)
         elsif cc_data then
