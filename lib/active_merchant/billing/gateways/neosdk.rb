@@ -141,7 +141,7 @@ module ActiveMerchant #:nodoc:
         super
       end
 
-      def purchase(money, cc_token=nil, options={})
+      def purchase(money, cc_token=nil, cc_data=nil, options={})
         if test? then
           gw = NeoSDK.build_sdk "SANDBOX", @options[:merchant], @options[:terminal_id], @options[:secret_key]
         else
@@ -149,6 +149,8 @@ module ActiveMerchant #:nodoc:
         end
         if cc_token then
           NeoSDK.perform_sale(gw, options[:user_id], cc_token, money)
+        elsif cc_data then
+          NeoSDK.perform_sale_cc_data(gw, options[:user_id], cc_data, money)
         else
           customer = NeoSDK.get_customer_id(gw, options[:user_id])
           NeoSDK.perform_sale(gw, customer, nil, money)

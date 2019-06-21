@@ -4,6 +4,7 @@ require 'active_merchant/billing/gateways/neo_sdk/Managers/customer_manager'
 require 'active_merchant/billing/gateways/neo_sdk/Entities/response_model'
 require 'active_merchant/billing/gateways/neo_sdk/TestCases/customer_operations'
 require 'active_merchant/billing/gateways/neo_sdk/TestCases/transaction_operations'
+require 'active_merchant/billing/rails'
 
 module NeoSDK
     def self.build_sdk(env,merchant,terminal,secret_key)
@@ -37,6 +38,46 @@ module NeoSDK
       return tranxMgr.Sale(tranxRequest)
   
     end
+
+    def self.perform_sale_cc_data(mpago,customer_id,active_merchant_card,amount)
+ 
+      tranxRequest = Transaction.new
+
+      customer = get_customer_id(mpago,customer_id)
+      #card Info
+      credit_cards = []
+
+      card = CreditCard.new
+      card.CardholderName = active_merchant_card.name
+      card.Status = active_merchant_card.valid? ? "Active" : "Inactive"
+      card.SetExpiration(sprintf("%.2i", active_merchant_card.month.to_i), active_merchant_card.year.to_s)
+      card.Number = active_merchant_card.number
+  
+      #custom Fields for Card
+      customFields = {}
+      customFields.store("TrustLevel", "5")
+      customFields.store("AllowSwipe", "true")
+ 
+      card.CustomFields = customFields
+      card.CustomerId = customer.getCustomerId #.instance_variable_get("@customerId")
+  
+      #add card to list. Becaue customer object holds list of it's associated cards
+      creditCards = []
+      creditCards << card
+  
+      #attach cards to customers
+      customer.CreditCards = creditCards
+
+      #Transaction Info
+      tranxRequest.CustomerData = customer
+      tranxRequest.Amount = amount
+      tranxRequest.OrderTrackingNumber = "777AAAAA"
+  
+      tranxMgr = TransactionManager.new(mpago)
+      return tranxMgr.Sale(tranxRequest)
+  
+    end
+
 
 
     def self.save_customer(mpago,email,ident)

@@ -16,10 +16,18 @@ class RemoteNeoGatewayTest < Test::Unit::TestCase
   def test_successful_purchase
     token = @gateway.store(@credit_card, @options)
     token = token.getCreditCards.last.getToken
-    response = @gateway.purchase(@amount, token, @options)
+    response = @gateway.purchase(@amount, cc_token=token, cc_data=nil, @options)
     assert_success response
     assert_equal NeosdkGateway::SUCCESS_CODES[0], response.getResponseDetails.getResponseCode
   end
+
+  def test_successful_purchase_with_cc_data
+    response = @gateway.purchase(@amount, cc_token=nil, cc_data=@credit_card, @options)
+    ccd =  response.getCreditCardDetail
+    assert_success response
+    assert_equal NeosdkGateway::SUCCESS_CODES[0], response.getResponseDetails.getResponseCode
+  end
+
 
 =begin
 
@@ -129,7 +137,7 @@ class RemoteNeoGatewayTest < Test::Unit::TestCase
 
   def test_transcript_scrubbing
     transcript = capture_transcript(@gateway) do
-      @gateway.purchase(@amount, @credit_card, @options)
+      @gateway.purchase(@amount, cc_token=nil,cc_data=@credit_card, @options)
     end
 #    transcript = @gateway.scrub(transcript)
 #    assert_scrubbed(@credit_card.number, transcript)
