@@ -6,8 +6,9 @@ class RemoteUsaEpayTransactionTest < Test::Unit::TestCase
     @credit_card = credit_card('4000100011112224')
     @declined_card = credit_card('4000300011112220')
     @credit_card_with_track_data = credit_card_with_track_data('4000100011112224')
+    @invalid_transaction_card = credit_card('4000300511112225')
     @check = check
-    @options = { :billing_address => address(:zip => "27614", :state => "NC"), :shipping_address => address }
+    @options = { :billing_address => address(:zip => '27614', :state => 'NC'), :shipping_address => address }
     @amount = 100
   end
 
@@ -29,6 +30,13 @@ class RemoteUsaEpayTransactionTest < Test::Unit::TestCase
     assert_success response
   end
 
+  def test_successful_purchase_with_echeck_and_extra_options
+    extra_options = @options.merge(check_format: 'ARC', account_type: 'savings')
+    assert response = @gateway.purchase(@amount, @check, extra_options)
+    assert_equal 'Success', response.message
+    assert_success response
+  end
+
   def test_successful_authorization_with_manual_entry
     @credit_card.manual_entry = true
     assert response = @gateway.authorize(@amount, @credit_card, @options)
@@ -36,15 +44,15 @@ class RemoteUsaEpayTransactionTest < Test::Unit::TestCase
     assert_success response
   end
 
-   def test_successful_purchase_with_manual_entry
+  def test_successful_purchase_with_manual_entry
     @credit_card.manual_entry = true
     assert response = @gateway.purchase(@amount, @credit_card, @options)
     assert_equal 'Success', response.message
     assert_success response
-   end
+  end
 
   def test_successful_purchase_with_extra_details
-    assert response = @gateway.purchase(@amount, @credit_card, @options.merge(:order_id => generate_unique_id, :description => "socool"))
+    assert response = @gateway.purchase(@amount, @credit_card, @options.merge(:order_id => generate_unique_id, :description => 'socool'))
     assert_equal 'Success', response.message
     assert_success response
   end
@@ -56,7 +64,47 @@ class RemoteUsaEpayTransactionTest < Test::Unit::TestCase
   end
 
   def test_successful_purchase_with_email_receipt
-    assert response = @gateway.purchase(@amount, @credit_card, @options.merge(:email => 'hank@hill.com',:cust_receipt => 'Yes'))
+    assert response = @gateway.purchase(@amount, @credit_card, @options.merge(:email => 'hank@hill.com', :cust_receipt => 'Yes'))
+    assert_equal 'Success', response.message
+    assert_success response
+  end
+
+  def test_successful_purchase_with_recurring_fields
+    recurring_fields = [
+      add_customer: true,
+      schedule: 'quarterly',
+      bill_source_key: 'bill source key',
+      bill_amount: 123,
+      num_left: 5,
+      start: '20501212',
+      recurring_receipt: true
+    ]
+
+    assert response = @gateway.purchase(@amount, @credit_card, @options.merge(recurring_fields: recurring_fields))
+    assert_equal 'Success', response.message
+    assert_success response
+  end
+
+  def test_successful_purchase_with_custom_fields
+    custom_fields = {
+      1 => 'multi',
+      2 => 'pass',
+      3 => 'korben',
+      4 => 'dallas'
+    }
+
+    assert response = @gateway.purchase(@amount, @credit_card, @options.merge(custom_fields: custom_fields))
+    assert_equal 'Success', response.message
+    assert_success response
+  end
+
+  def test_successful_purchase_with_line_items
+    line_items = [
+      {sku:  'abc123', cost: 119, quantity: 1},
+      {sku: 'def456', cost: 200, quantity: 2, name: 'an item' }
+    ]
+
+    assert response = @gateway.purchase(@amount, @credit_card, @options.merge(line_items: line_items))
     assert_equal 'Success', response.message
     assert_success response
   end
@@ -111,7 +159,7 @@ class RemoteUsaEpayTransactionTest < Test::Unit::TestCase
   end
 
   def test_unsuccessful_refund
-    assert refund = @gateway.refund(@amount - 20, "unknown_authorization")
+    assert refund = @gateway.refund(@amount - 20, 'unknown_authorization')
     assert_failure refund
     assert_match(/Unable to find original transaction/, refund.message)
   end
@@ -133,7 +181,7 @@ class RemoteUsaEpayTransactionTest < Test::Unit::TestCase
   end
 
   def test_unsuccessful_void
-    assert void = @gateway.void("unknown_authorization")
+    assert void = @gateway.void('unknown_authorization')
     assert_failure void
     assert_match(/Unable to locate transaction/, void.message)
   end
@@ -155,7 +203,7 @@ class RemoteUsaEpayTransactionTest < Test::Unit::TestCase
   end
 
   def test_unsuccessful_void_release
-    assert void = @gateway.void("unknown_authorization", void_mode: :void_release)
+    assert void = @gateway.void('unknown_authorization', void_mode: :void_release)
     assert_failure void
     assert_match(/Unable to locate transaction/, void.message)
   end
@@ -170,14 +218,14 @@ class RemoteUsaEpayTransactionTest < Test::Unit::TestCase
   def test_successful_verify
     assert response = @gateway.verify(@credit_card, @options)
     assert_success response
-    assert_equal "Success", response.message
-    assert_success response.responses.last, "The void should succeed"
+    assert_equal 'Success', response.message
+    assert_success response.responses.last, 'The void should succeed'
   end
 
   def test_failed_verify
     assert response = @gateway.verify(@declined_card, @options)
     assert_failure response
-    assert_match "Card Declined (00)", response.message
+    assert_match 'Card Declined (00)', response.message
   end
 
   def test_transcript_scrubbing
@@ -205,5 +253,11 @@ class RemoteUsaEpayTransactionTest < Test::Unit::TestCase
 
     assert_scrubbed(@check.account_number, transcript)
     assert_scrubbed(@gateway.options[:login], transcript)
+  end
+
+  def test_processing_error
+    assert response = @gateway.purchase(@amount, @invalid_transaction_card, @options)
+    assert_equal 'processing_error', response.error_code
+    assert_failure response
   end
 end

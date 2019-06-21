@@ -70,7 +70,6 @@ module ActiveMerchant #:nodoc:
               add_address(xml, address)
             end
           end
-
         end
 
         xml.target!
@@ -148,7 +147,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def commit(request)
-        raw_response = ssl_post((test? ? self.test_url : self.live_url), "DATA=" + request)
+        raw_response = ssl_post((test? ? self.test_url : self.live_url), 'DATA=' + request)
 
         response = parse(raw_response)
 
@@ -175,21 +174,21 @@ module ActiveMerchant #:nodoc:
 
       def parse_element(response, node)
         if node.has_elements?
-          node.elements.each{|element| parse_element(response, element) }
+          node.elements.each { |element| parse_element(response, element) }
         else
           response[node.name.underscore.to_sym] = node.text
         end
       end
 
       def success?(response)
-        (response[:response] == "Approved")
+        (response[:response] == 'Approved')
       end
 
       def normalize(text)
         return unless text
 
         if ActiveSupport::Inflector.method(:transliterate).arity == -2
-          ActiveSupport::Inflector.transliterate(text,'')
+          ActiveSupport::Inflector.transliterate(text, '')
         else
           text.gsub(/[^\x00-\x7F]+/, '')
         end

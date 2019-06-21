@@ -22,7 +22,7 @@ class ConnectionTest < Test::Unit::TestCase
 
   def test_connection_endpoint_raises_uri_error
     assert_raises URI::InvalidURIError do
-      ActiveMerchant::Connection.new("not a URI")
+      ActiveMerchant::Connection.new('not a URI')
     end
   end
 
@@ -35,13 +35,21 @@ class ConnectionTest < Test::Unit::TestCase
   end
 
   def test_connection_does_pass_requested_proxy
-    @connection.proxy_address = "proxy.example.com"
+    @connection.proxy_address = 'proxy.example.com'
     @connection.proxy_port = 8080
     spy = Net::HTTP.new('example.com', 443)
-    Net::HTTP.expects(:new).with('example.com', 443, "proxy.example.com", 8080).returns(spy)
+    Net::HTTP.expects(:new).with('example.com', 443, 'proxy.example.com', 8080).returns(spy)
     spy.expects(:start).returns(true)
     spy.expects(:get).with('/tx.php', {'connection' => 'close'}).returns(@ok)
     @connection.request(:get, nil, {})
+  end
+
+  def test_connection_does_not_mutate_headers_argument
+    headers = { 'Content-Type' => 'text/xml' }.freeze
+    Net::HTTP.any_instance.expects(:get).with('/tx.php', headers.merge({'connection' => 'close'})).returns(@ok)
+    Net::HTTP.any_instance.expects(:start).returns(true)
+    @connection.request(:get, nil, headers)
+    assert_equal({ 'Content-Type' => 'text/xml' }, headers)
   end
 
   def test_successful_get_request
@@ -109,9 +117,9 @@ class ConnectionTest < Test::Unit::TestCase
   def test_override_min_version
     omit_if Net::HTTP.instance_methods.exclude?(:min_version=)
 
-    refute_equal :TLS1_1, @connection.min_version
-    @connection.min_version = :TLS1_1
-    assert_equal :TLS1_1, @connection.min_version
+    refute_equal :TLS1_2, @connection.min_version
+    @connection.min_version = :TLS1_2
+    assert_equal :TLS1_2, @connection.min_version
   end
 
   def test_override_max_version
@@ -155,9 +163,9 @@ class ConnectionTest < Test::Unit::TestCase
   end
 
   def test_override_ca_file
-    @connection.ca_file = "/bogus"
-    assert_equal "/bogus", @connection.ca_file
-    assert_equal "/bogus", @connection.send(:http).ca_file
+    @connection.ca_file = '/bogus'
+    assert_equal '/bogus', @connection.ca_file
+    assert_equal '/bogus', @connection.send(:http).ca_file
   end
 
   def test_default_ca_path
@@ -166,9 +174,9 @@ class ConnectionTest < Test::Unit::TestCase
   end
 
   def test_override_ca_path
-    @connection.ca_path = "/bogus"
-    assert_equal "/bogus", @connection.ca_path
-    assert_equal "/bogus", @connection.send(:http).ca_path
+    @connection.ca_path = '/bogus'
+    assert_equal '/bogus', @connection.ca_path
+    assert_equal '/bogus', @connection.send(:http).ca_path
   end
 
   def test_unrecoverable_exception
@@ -207,9 +215,12 @@ class ConnectionTest < Test::Unit::TestCase
   end
 
   def test_mixture_of_failures_with_retry_safe_enabled
-    Net::HTTP.any_instance.expects(:start).times(3).raises(Errno::ECONNRESET).
-                                                    raises(Errno::ECONNREFUSED).
-                                                    raises(EOFError)
+    Net::HTTP.any_instance.
+      expects(:start).
+      times(3).
+      raises(Errno::ECONNRESET).
+      raises(Errno::ECONNREFUSED).
+      raises(EOFError)
 
     @connection.retry_safe = true
 

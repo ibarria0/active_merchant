@@ -7,6 +7,7 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     @payment_method_token = 'E3eQGR3E0xiosj7FOJRtIKbF8Ch'
 
     @credit_card = credit_card
+    @check = check
     @amount = 103
     @existing_transaction  = 'LKA3RchoqYO0njAfhHVw60ohjrC'
     @not_found_transaction = 'AdyQXaG0SVpSoMPdmFlvd3aA3uz'
@@ -20,10 +21,10 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     assert_success response
     assert !response.test?
 
-    assert_equal "K1CRcdN0jK32UyrnZGPOXLRjqJl", response.authorization
-    assert_equal "Succeeded!", response.message
-    assert_equal "Non-U.S. issuing bank does not support AVS.", response.avs_result["message"]
-    assert_equal "CVV failed data validation check", response.cvv_result["message"]
+    assert_equal 'K1CRcdN0jK32UyrnZGPOXLRjqJl', response.authorization
+    assert_equal 'Succeeded!', response.message
+    assert_equal 'Non-U.S. issuing bank does not support AVS.', response.avs_result['message']
+    assert_equal 'CVV failed data validation check', response.cvv_result['message']
   end
 
   def test_failed_purchase_with_payment_method_token
@@ -33,28 +34,43 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     assert_failure response
     assert !response.test?
 
-    assert_equal "Xh0T15CfYQeUqYV9Ixm8YV283Ds", response.authorization
-    assert_equal "This transaction cannot be processed.", response.message
+    assert_equal 'Xh0T15CfYQeUqYV9Ixm8YV283Ds', response.authorization
+    assert_equal 'This transaction cannot be processed.', response.message
     assert_equal '10762', response.params['response_error_code']
     assert_nil response.avs_result['message']
     assert_nil response.cvv_result['message']
   end
 
   def test_successful_purchase_with_credit_card
-    @gateway.stubs(:raw_ssl_request).returns(successful_store_response, successful_purchase_response)
+    @gateway.stubs(:raw_ssl_request).returns(successful_purchase_response)
     response = @gateway.purchase(@amount, @credit_card)
 
     assert_success response
     assert !response.test?
 
-    assert_equal "K1CRcdN0jK32UyrnZGPOXLRjqJl", response.authorization
-    assert_equal "Succeeded!", response.message
-    assert_equal "Non-U.S. issuing bank does not support AVS.", response.avs_result["message"]
-    assert_equal "CVV failed data validation check", response.cvv_result["message"]
+    assert_equal 'K1CRcdN0jK32UyrnZGPOXLRjqJl', response.authorization
+    assert_equal 'Succeeded!', response.message
+    assert_equal 'Non-U.S. issuing bank does not support AVS.', response.avs_result['message']
+    assert_equal 'CVV failed data validation check', response.cvv_result['message']
     assert_equal 'Purchase', response.params['transaction_type']
     assert_equal '5WxC03VQ0LmmkYvIHl7XsPKIpUb', response.params['payment_method_token']
     assert_equal '6644', response.params['payment_method_last_four_digits']
     assert_equal 'used', response.params['payment_method_storage_state']
+  end
+
+  def test_successful_purchase_with_check
+    @gateway.stubs(:raw_ssl_request).returns(successful_check_purchase_response)
+    response = @gateway.purchase(@amount, @check)
+
+    assert_success response
+    assert !response.test?
+
+    assert_equal 'ZwnfZs3Qy4gRDPWXHopamNuarCJ', response.authorization
+    assert_equal 'Succeeded!', response.message
+    assert_equal 'Purchase', response.params['transaction_type']
+    assert_equal 'HtCrYfW17wEzWWfrMbwDX4TwPVW', response.params['payment_method_token']
+    assert_equal '021*', response.params['payment_method_routing_number']
+    assert_equal '*3210', response.params['payment_method_account_number']
   end
 
   def test_failed_purchase_with_invalid_credit_card
@@ -65,12 +81,12 @@ class SpreedlyCoreTest < Test::Unit::TestCase
   end
 
   def test_failed_purchase_with_credit_card
-    @gateway.stubs(:raw_ssl_request).returns(successful_store_response, failed_purchase_response)
+    @gateway.stubs(:raw_ssl_request).returns(failed_purchase_response)
     response = @gateway.purchase(@amount, @credit_card)
     assert_failure response
 
-    assert_equal "Xh0T15CfYQeUqYV9Ixm8YV283Ds", response.authorization
-    assert_equal "This transaction cannot be processed.", response.message
+    assert_equal 'Xh0T15CfYQeUqYV9Ixm8YV283Ds', response.authorization
+    assert_equal 'This transaction cannot be processed.', response.message
     assert_equal '10762', response.params['response_error_code']
     assert_nil response.avs_result['message']
     assert_nil response.cvv_result['message']
@@ -78,12 +94,12 @@ class SpreedlyCoreTest < Test::Unit::TestCase
   end
 
   def test_purchase_without_gateway_token_option
-    @gateway.expects(:commit).with("gateways/token/purchase.xml", anything)
+    @gateway.expects(:commit).with('gateways/token/purchase.xml', anything)
     @gateway.purchase(@amount, @payment_method_token)
   end
 
   def test_purchase_with_gateway_token_option
-    @gateway.expects(:commit).with("gateways/mynewtoken/purchase.xml", anything)
+    @gateway.expects(:commit).with('gateways/mynewtoken/purchase.xml', anything)
     @gateway.purchase(@amount, @payment_method_token, gateway_token: 'mynewtoken')
   end
 
@@ -94,18 +110,18 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     assert_success response
     assert !response.test?
 
-    assert_equal "NKz5SO6jrsRDc0UyaujwayXJZ1a", response.authorization
-    assert_equal "Succeeded!", response.message
-    assert_equal "Non-U.S. issuing bank does not support AVS.", response.avs_result["message"]
-    assert_equal "CVV failed data validation check", response.cvv_result["message"]
+    assert_equal 'NKz5SO6jrsRDc0UyaujwayXJZ1a', response.authorization
+    assert_equal 'Succeeded!', response.message
+    assert_equal 'Non-U.S. issuing bank does not support AVS.', response.avs_result['message']
+    assert_equal 'CVV failed data validation check', response.cvv_result['message']
 
     @gateway.expects(:raw_ssl_request).returns(successful_capture_response)
     response = @gateway.capture(@amount, response.authorization)
     assert_success response
     assert !response.test?
 
-    assert_equal "Bd1ZeztpPyjfXzfUa14BQGfaLmg", response.authorization
-    assert_equal "Succeeded!", response.message
+    assert_equal 'Bd1ZeztpPyjfXzfUa14BQGfaLmg', response.authorization
+    assert_equal 'Succeeded!', response.message
     assert_nil response.avs_result['message']
     assert_nil response.cvv_result['message']
   end
@@ -114,23 +130,23 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     @gateway.expects(:raw_ssl_request).returns(failed_authorize_response)
     response = @gateway.authorize(@amount, @payment_method_token)
     assert_failure response
-    assert_equal "This transaction cannot be processed.", response.message
+    assert_equal 'This transaction cannot be processed.', response.message
     assert_equal '10762', response.params['response_error_code']
     assert_nil response.avs_result['message']
     assert_nil response.cvv_result['message']
   end
 
   def test_successful_authorize_with_credit_card_and_capture
-    @gateway.stubs(:raw_ssl_request).returns(successful_store_response, successful_authorize_response)
+    @gateway.stubs(:raw_ssl_request).returns(successful_authorize_response)
     response = @gateway.authorize(@amount, @credit_card)
 
     assert_success response
     assert !response.test?
 
-    assert_equal "NKz5SO6jrsRDc0UyaujwayXJZ1a", response.authorization
-    assert_equal "Succeeded!", response.message
-    assert_equal "Non-U.S. issuing bank does not support AVS.", response.avs_result["message"]
-    assert_equal "CVV failed data validation check", response.cvv_result["message"]
+    assert_equal 'NKz5SO6jrsRDc0UyaujwayXJZ1a', response.authorization
+    assert_equal 'Succeeded!', response.message
+    assert_equal 'Non-U.S. issuing bank does not support AVS.', response.avs_result['message']
+    assert_equal 'CVV failed data validation check', response.cvv_result['message']
     assert_equal 'Authorization', response.params['transaction_type']
     assert_equal '5WxC03VQ0LmmkYvIHl7XsPKIpUb', response.params['payment_method_token']
     assert_equal '6644', response.params['payment_method_last_four_digits']
@@ -139,15 +155,15 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     @gateway.expects(:raw_ssl_request).returns(successful_capture_response)
     response = @gateway.capture(@amount, response.authorization)
     assert_success response
-    assert_equal "Bd1ZeztpPyjfXzfUa14BQGfaLmg", response.authorization
-    assert_equal "Succeeded!", response.message
+    assert_equal 'Bd1ZeztpPyjfXzfUa14BQGfaLmg', response.authorization
+    assert_equal 'Succeeded!', response.message
   end
 
   def test_failed_authorize_with_credit_card
-    @gateway.stubs(:raw_ssl_request).returns(successful_store_response, failed_authorize_response)
+    @gateway.stubs(:raw_ssl_request).returns(failed_authorize_response)
     response = @gateway.authorize(@amount, @credit_card)
     assert_failure response
-    assert_equal "This transaction cannot be processed.", response.message
+    assert_equal 'This transaction cannot be processed.', response.message
     assert_equal '10762', response.params['response_error_code']
   end
 
@@ -166,7 +182,7 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     @gateway.expects(:raw_ssl_request).returns(failed_capture_response)
     response = @gateway.capture(@amount + 20, response.authorization)
     assert_failure response
-    assert_equal "Amount specified exceeds allowable limit.", response.message
+    assert_equal 'Amount specified exceeds allowable limit.', response.message
   end
 
   def test_successful_refund
@@ -177,8 +193,8 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     @gateway.expects(:raw_ssl_request).returns(successful_refund_response)
     response = @gateway.refund(@amount, response.authorization)
     assert_success response
-    assert_equal "Succeeded!", response.message
-    assert_equal "Credit", response.params["transaction_type"]
+    assert_equal 'Succeeded!', response.message
+    assert_equal 'Credit', response.params['transaction_type']
   end
 
   def test_failed_refund
@@ -189,7 +205,7 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     @gateway.expects(:raw_ssl_request).returns(failed_refund_response)
     response = @gateway.refund(@amount + 20, response.authorization)
     assert_failure response
-    assert_equal "The partial refund amount must be less than or equal to the original transaction amount", response.message
+    assert_equal 'The partial refund amount must be less than or equal to the original transaction amount', response.message
     assert_equal '10009', response.params['response_error_code']
   end
 
@@ -201,7 +217,7 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     @gateway.expects(:raw_ssl_request).returns(successful_void_response)
     response = @gateway.void(response.authorization)
     assert_success response
-    assert_equal "Succeeded!", response.message
+    assert_equal 'Succeeded!', response.message
   end
 
   def test_failed_void
@@ -212,7 +228,7 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     @gateway.expects(:raw_ssl_request).returns(failed_void_response)
     response = @gateway.void(response.authorization)
     assert_failure response
-    assert_equal "Authorization is voided.", response.message
+    assert_equal 'Authorization is voided.', response.message
     assert_equal '10600', response.params['response_error_code']
   end
 
@@ -221,8 +237,8 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     response = @gateway.verify(@payment_method_token)
     assert_success response
 
-    assert_equal "Succeeded!", response.message
-    assert_equal "Verification", response.params["transaction_type"]
+    assert_equal 'Succeeded!', response.message
+    assert_equal 'Verification', response.params['transaction_type']
   end
 
   def test_failed_verify
@@ -230,7 +246,7 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     response = @gateway.verify(@payment_method_token)
     assert_failure response
 
-    assert_equal "Unable to process the verify transaction.", response.message
+    assert_equal 'Unable to process the verify transaction.', response.message
     assert_empty response.params['response_error_code']
   end
 
@@ -238,9 +254,9 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     @gateway.expects(:raw_ssl_request).returns(successful_store_response)
     response = @gateway.store(@credit_card)
     assert_success response
-    assert_equal "Succeeded!", response.message
-    assert_equal "Bml92ojQgsTf7bQ7z7WlwQVIdjr", response.authorization
-    assert_equal "true", response.params["retained"]
+    assert_equal 'Succeeded!', response.message
+    assert_equal 'Bml92ojQgsTf7bQ7z7WlwQVIdjr', response.authorization
+    assert_equal 'true', response.params['retained']
   end
 
   def test_failed_store
@@ -258,7 +274,7 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     @gateway.expects(:raw_ssl_request).returns(successful_unstore_response)
     response = @gateway.unstore(response.authorization)
     assert_success response
-    assert_equal "Succeeded!", response.message
+    assert_equal 'Succeeded!', response.message
   end
 
   def test_successful_find
@@ -266,8 +282,8 @@ class SpreedlyCoreTest < Test::Unit::TestCase
     response = @gateway.find(@existing_transaction)
     assert_success response
 
-    assert_equal "Succeeded!", response.message
-    assert_equal "LKA3RchoqYO0njAfhHVw60ohjrC", response.authorization
+    assert_equal 'Succeeded!', response.message
+    assert_equal 'LKA3RchoqYO0njAfhHVw60ohjrC', response.authorization
   end
 
   def test_failed_find
@@ -347,6 +363,97 @@ class SpreedlyCoreTest < Test::Unit::TestCase
         </payment_method>
         <api_urls>
         </api_urls>
+      </transaction>
+    XML
+  end
+
+  def successful_check_purchase_response
+    MockResponse.succeeded <<-XML
+      <transaction>
+        <on_test_gateway type="boolean">false</on_test_gateway>
+        <created_at type="dateTime">2019-01-06T18:24:33Z</created_at>
+        <updated_at type="dateTime">2019-01-06T18:24:33Z</updated_at>
+        <succeeded type="boolean">true</succeeded>
+        <state>succeeded</state>
+        <token>ZwnfZs3Qy4gRDPWXHopamNuarCJ</token>
+        <transaction_type>Purchase</transaction_type>
+        <order_id nil="true"/>
+        <ip nil="true"/>
+        <description nil="true"/>
+        <email nil="true"/>
+        <merchant_name_descriptor nil="true"/>
+        <merchant_location_descriptor nil="true"/>
+        <gateway_specific_fields nil="true"/>
+        <gateway_specific_response_fields>
+        </gateway_specific_response_fields>
+        <gateway_transaction_id>49</gateway_transaction_id>
+        <gateway_latency_ms type="integer">0</gateway_latency_ms>
+        <amount type="integer">100</amount>
+        <currency_code>USD</currency_code>
+        <retain_on_success type="boolean">false</retain_on_success>
+        <payment_method_added type="boolean">true</payment_method_added>
+        <message key="messages.transaction_succeeded">Succeeded!</message>
+        <gateway_token>3gLeg4726V5P0HK7cq7QzHsL0a6</gateway_token>
+        <gateway_type>test</gateway_type>
+        <shipping_address>
+          <name nil="true"/>
+          <address1 nil="true"/>
+          <address2 nil="true"/>
+          <city nil="true"/>
+          <state nil="true"/>
+          <zip nil="true"/>
+          <country nil="true"/>
+          <phone_number nil="true"/>
+        </shipping_address>
+        <response>
+          <success type="boolean">true</success>
+          <message>Successful purchase</message>
+          <avs_code nil="true"/>
+          <avs_message nil="true"/>
+          <cvv_code nil="true"/>
+          <cvv_message nil="true"/>
+          <pending type="boolean">false</pending>
+          <result_unknown type="boolean">false</result_unknown>
+          <error_code nil="true"/>
+          <error_detail nil="true"/>
+          <cancelled type="boolean">false</cancelled>
+          <fraud_review nil="true"/>
+          <created_at type="dateTime">2019-01-06T18:24:33Z</created_at>
+          <updated_at type="dateTime">2019-01-06T18:24:33Z</updated_at>
+        </response>
+        <api_urls>
+        </api_urls>
+        <payment_method>
+          <token>HtCrYfW17wEzWWfrMbwDX4TwPVW</token>
+          <created_at type="dateTime">2019-01-06T18:24:33Z</created_at>
+          <updated_at type="dateTime">2019-01-06T18:24:33Z</updated_at>
+          <email nil="true"/>
+          <data nil="true"/>
+          <storage_state>cached</storage_state>
+          <test type="boolean">true</test>
+          <metadata nil="true"/>
+          <full_name>Jim Smith</full_name>
+          <bank_name nil="true"/>
+          <account_type>checking</account_type>
+          <account_holder_type>personal</account_holder_type>
+          <routing_number_display_digits>021</routing_number_display_digits>
+          <account_number_display_digits>3210</account_number_display_digits>
+          <first_name>Jim</first_name>
+          <last_name>Smith</last_name>
+          <address1 nil="true"/>
+          <address2 nil="true"/>
+          <city nil="true"/>
+          <state nil="true"/>
+          <zip nil="true"/>
+          <country nil="true"/>
+          <phone_number nil="true"/>
+          <company nil="true"/>
+          <payment_method_type>bank_account</payment_method_type>
+          <errors>
+          </errors>
+          <routing_number>021*</routing_number>
+          <account_number>*3210</account_number>
+        </payment_method>
       </transaction>
     XML
   end

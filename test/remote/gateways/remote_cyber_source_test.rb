@@ -4,27 +4,33 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
   def setup
     Base.mode = :test
 
-    @gateway = CyberSourceGateway.new({nexus: "NC"}.merge(fixtures(:cyber_source)))
+    @gateway = CyberSourceGateway.new({nexus: 'NC'}.merge(fixtures(:cyber_source)))
 
     @credit_card = credit_card('4111111111111111', verification_value: '321')
     @declined_card = credit_card('801111111111111')
     @pinless_debit_card = credit_card('4002269999999999')
+    @elo_credit_card = credit_card('5067310000000010',
+      verification_value: '321',
+      month: '12',
+      year: (Time.now.year + 2).to_s,
+      brand: :elo
+    )
     @three_ds_unenrolled_card = credit_card('4000000000000051',
       verification_value: '321',
-      month: "12",
-      year: "#{Time.now.year + 2}",
+      month: '12',
+      year: (Time.now.year + 2).to_s,
       brand: :visa
     )
     @three_ds_enrolled_card = credit_card('4000000000000002',
       verification_value: '321',
-      month: "12",
-      year: "#{Time.now.year + 2}",
+      month: '12',
+      year: (Time.now.year + 2).to_s,
       brand: :visa
     )
     @three_ds_invalid_card = credit_card('4000000000000010',
       verification_value: '321',
-      month: "12",
-      year: "#{Time.now.year + 2}",
+      month: '12',
+      year: (Time.now.year + 2).to_s,
       brand: :visa
     )
 
@@ -56,7 +62,7 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
       :order_id => generate_unique_id,
       :credit_card => @credit_card,
       :subscription => {
-        :frequency => "weekly",
+        :frequency => 'weekly',
         :start_date => Date.today.next_week,
         :occurrences => 4,
         :auto_renew => true,
@@ -79,8 +85,8 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
   def test_network_tokenization_transcript_scrubbing
     credit_card = network_tokenization_credit_card('4111111111111111',
       :brand              => 'visa',
-      :eci                => "05",
-      :payment_cryptogram => "EHuWW9PiBkWvqE5juRwDzAUFBAk="
+      :eci                => '05',
+      :payment_cryptogram => 'EHuWW9PiBkWvqE5juRwDzAUFBAk='
     )
 
     transcript = capture_transcript(@gateway) do
@@ -95,6 +101,14 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
 
   def test_successful_authorization
     assert response = @gateway.authorize(@amount, @credit_card, @options)
+    assert_equal 'Successful transaction', response.message
+    assert_success response
+    assert response.test?
+    assert !response.authorization.blank?
+  end
+
+  def test_successful_authorization_with_elo
+    assert response = @gateway.authorize(@amount, @elo_credit_card, @options)
     assert_equal 'Successful transaction', response.message
     assert_success response
     assert response.test?
@@ -128,16 +142,35 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert void.test?
   end
 
+  def test_capture_and_void_with_elo
+    assert auth = @gateway.authorize(@amount, @elo_credit_card, @options)
+    assert_success auth
+    assert capture = @gateway.capture(@amount, auth.authorization, @options)
+    assert_success capture
+    assert void = @gateway.void(capture.authorization, @options)
+    assert_equal 'Successful transaction', void.message
+    assert_success void
+    assert void.test?
+  end
+
   def test_successful_tax_calculation
     assert response = @gateway.calculate_tax(@credit_card, @options)
     assert_equal 'Successful transaction', response.message
     assert response.params['totalTaxAmount']
-    assert_not_equal "0", response.params['totalTaxAmount']
+    assert_not_equal '0', response.params['totalTaxAmount']
     assert_success response
   end
 
   def test_successful_purchase
     assert response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_equal 'Successful transaction', response.message
+    assert_success response
+    assert response.test?
+  end
+
+  def test_successful_purchase_with_elo
+    assert response = @gateway.purchase(@amount, @elo_credit_card, @options)
+    assert_success response
     assert_equal 'Successful transaction', response.message
     assert_success response
     assert response.test?
@@ -158,7 +191,7 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
   end
 
   def test_successful_purchase_with_long_country_name
-    @options[:billing_address] = address(country: "united states", state: "NC")
+    @options[:billing_address] = address(country: 'united states', state: 'NC')
     assert response = @gateway.purchase(@amount, @credit_card, @options)
     assert_equal 'Successful transaction', response.message
     assert_success response
@@ -202,6 +235,15 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert_success capture
   end
 
+  def test_authorize_and_capture_with_elo
+    assert auth = @gateway.authorize(@amount, @elo_credit_card, @options)
+    assert_success auth
+    assert_equal 'Successful transaction', auth.message
+
+    assert capture = @gateway.capture(@amount, auth.authorization)
+    assert_success capture
+  end
+
   def test_successful_authorization_and_failed_capture
     assert auth = @gateway.authorize(@amount, @credit_card, @options)
     assert_success auth
@@ -209,22 +251,26 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
 
     assert capture = @gateway.capture(@amount + 10, auth.authorization, @options)
     assert_failure capture
-    assert_equal "The requested amount exceeds the originally authorized amount",  capture.message
+    assert_equal 'The requested amount exceeds the originally authorized amount',  capture.message
   end
 
   def test_failed_capture_bad_auth_info
-    assert auth = @gateway.authorize(@amount, @credit_card, @options)
-    assert capture = @gateway.capture(@amount, "a;b;c", @options)
+    assert @gateway.authorize(@amount, @credit_card, @options)
+    assert capture = @gateway.capture(@amount, 'a;b;c', @options)
     assert_failure capture
   end
 
   def test_invalid_login
-    gateway = CyberSourceGateway.new( :login => 'asdf', :password => 'qwer' )
+    gateway = CyberSourceGateway.new(:login => 'asdf', :password => 'qwer')
     assert response = gateway.purchase(@amount, @credit_card, @options)
     assert_failure response
     assert_equal "wsse:FailedCheck: \nSecurity Data : UsernameToken authentication failed.\n", response.message
   end
 
+  # Unable to test refunds for Elo cards, as the test account is setup to have
+  # Elo transactions routed to Comercio Latino which has very specific rules on
+  # refunds (i.e. that you cannot do a "Stand-Alone" refund). This means we need
+  # to go through a Capture cycle at least a day before submitting a refund.
   def test_successful_refund
     assert response = @gateway.purchase(@amount, @credit_card, @options)
     assert_equal 'Successful transaction', response.message
@@ -238,15 +284,15 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
   def test_successful_validate_pinless_debit_card
     assert response = @gateway.validate_pinless_debit_card(@pinless_debit_card, @options)
     assert response.test?
-    assert_equal 'Y', response.params["status"]
+    assert_equal 'Y', response.params['status']
     assert_equal true,  response.success?
   end
 
   def test_network_tokenization_authorize_and_capture
     credit_card = network_tokenization_credit_card('4111111111111111',
       :brand              => 'visa',
-      :eci                => "05",
-      :payment_cryptogram => "EHuWW9PiBkWvqE5juRwDzAUFBAk="
+      :eci                => '05',
+      :payment_cryptogram => 'EHuWW9PiBkWvqE5juRwDzAUFBAk='
     )
 
     assert auth = @gateway.authorize(@amount, credit_card, @options)
@@ -271,7 +317,7 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
 
   def test_successful_authorize_with_nonfractional_currency
     assert response = @gateway.authorize(100, @credit_card, @options.merge(:currency => 'JPY'))
-    assert_equal "1", response.params['amount']
+    assert_equal '1', response.params['amount']
     assert_success response
   end
 
@@ -300,8 +346,35 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert response.test?
   end
 
+  def test_successful_subscription_purchase_with_elo
+    assert response = @gateway.store(@elo_credit_card, @subscription_options)
+    assert_equal 'Successful transaction', response.message
+    assert_success response
+    assert response.test?
 
-  def test_successful_subscription_credit
+    assert response = @gateway.purchase(@amount, response.authorization, :order_id => generate_unique_id)
+    assert_equal 'Successful transaction', response.message
+    assert_success response
+    assert response.test?
+  end
+
+  def test_successful_standalone_credit_to_card
+    assert response = @gateway.credit(@amount, @credit_card, @options)
+
+    assert_equal 'Successful transaction', response.message
+    assert_success response
+    assert response.test?
+  end
+
+  def test_failed_standalone_credit_to_card
+    assert response = @gateway.credit(@amount, @declined_card, @options)
+
+    assert_equal 'Invalid account number', response.message
+    assert_failed response
+    assert response.test?
+  end
+
+  def test_successful_standalone_credit_to_subscription
     assert response = @gateway.store(@credit_card, @subscription_options)
     assert_equal 'Successful transaction', response.message
     assert_success response
@@ -321,6 +394,13 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert response.test?
   end
 
+  def test_successful_create_subscription_with_elo
+    assert response = @gateway.store(@elo_credit_card, @subscription_options)
+    assert_equal 'Successful transaction', response.message
+    assert_success response
+    assert response.test?
+  end
+
   def test_successful_create_subscription_with_setup_fee
     assert response = @gateway.store(@credit_card, @subscription_options.merge(:setup_fee => 100))
     assert_equal 'Successful transaction', response.message
@@ -332,7 +412,7 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     response = @gateway.store(@credit_card, @subscription_options.merge(:setup_fee => 99.0, :subscription => {:amount => 49.0, :automatic_renew => false, frequency: 'monthly'}))
     assert_equal 'Successful transaction', response.message
     response = @gateway.retrieve(response.authorization, order_id: @subscription_options[:order_id])
-    assert_equal "0.49", response.params['recurringAmount']
+    assert_equal '0.49', response.params['recurringAmount']
     assert_equal 'monthly', response.params['frequency']
   end
 
@@ -371,6 +451,16 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert response.test?
   end
 
+  def test_successful_delete_subscription_with_elo
+    assert response = @gateway.store(@elo_credit_card, @subscription_options)
+    assert response.success?
+    assert response.test?
+
+    assert response = @gateway.unstore(response.authorization, :order_id => generate_unique_id)
+    assert response.success?
+    assert response.test?
+  end
+
   def test_successful_retrieve_subscription
     assert response = @gateway.store(@credit_card, @subscription_options)
     assert response.success?
@@ -383,19 +473,19 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
 
   def test_3ds_enroll_request_via_purchase
     assert response = @gateway.purchase(1202, @three_ds_enrolled_card, @options.merge(payer_auth_enroll_service: true))
-    assert_equal "475", response.params["reasonCode"]
-    assert !response.params["acsURL"].blank?
-    assert !response.params["paReq"].blank?
-    assert !response.params["xid"].blank?
+    assert_equal '475', response.params['reasonCode']
+    assert !response.params['acsURL'].blank?
+    assert !response.params['paReq'].blank?
+    assert !response.params['xid'].blank?
     assert !response.success?
   end
 
   def test_3ds_enroll_request_via_authorize
     assert response = @gateway.authorize(1202, @three_ds_enrolled_card, @options.merge(payer_auth_enroll_service: true))
-    assert_equal "475", response.params["reasonCode"]
-    assert !response.params["acsURL"].blank?
-    assert !response.params["paReq"].blank?
-    assert !response.params["xid"].blank?
+    assert_equal '475', response.params['reasonCode']
+    assert !response.params['acsURL'].blank?
+    assert !response.params['paReq'].blank?
+    assert !response.params['xid'].blank?
     assert !response.success?
   end
 
@@ -409,28 +499,76 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
 
   def test_successful_3ds_validate_purchase_request
     assert response = @gateway.purchase(1202, @three_ds_enrolled_card, @options.merge(payer_auth_validate_service: true, pares: pares))
-    assert_equal "100", response.params["reasonCode"]
-    assert_equal "0", response.params["authenticationResult"]
+    assert_equal '100', response.params['reasonCode']
+    assert_equal '0', response.params['authenticationResult']
     assert response.success?
   end
 
   def test_failed_3ds_validate_purchase_request
     assert response = @gateway.purchase(1202, @three_ds_invalid_card, @options.merge(payer_auth_validate_service: true, pares: pares))
-    assert_equal "476", response.params["reasonCode"]
+    assert_equal '476', response.params['reasonCode']
     assert !response.success?
   end
 
   def test_successful_3ds_validate_authorize_request
     assert response = @gateway.authorize(1202, @three_ds_enrolled_card, @options.merge(payer_auth_validate_service: true, pares: pares))
-    assert_equal "100", response.params["reasonCode"]
-    assert_equal "0", response.params["authenticationResult"]
+    assert_equal '100', response.params['reasonCode']
+    assert_equal '0', response.params['authenticationResult']
     assert response.success?
   end
 
   def test_failed_3ds_validate_authorize_request
     assert response = @gateway.authorize(1202, @three_ds_invalid_card, @options.merge(payer_auth_validate_service: true, pares: pares))
-    assert_equal "476", response.params["reasonCode"]
+    assert_equal '476', response.params['reasonCode']
     assert !response.success?
+  end
+
+  def test_successful_first_unscheduled_cof_transaction
+    @options[:stored_credential] = {
+      :initiator => 'cardholder',
+      :reason_type => 'unscheduled',
+      :initial_transaction => true,
+      :network_transaction_id => ''
+    }
+    assert response = @gateway.authorize(@amount, @credit_card, @options)
+    assert_equal 'Successful transaction', response.message
+    assert_success response
+  end
+
+  def test_successful_subsequent_unscheduled_cof_transaction
+    @options[:stored_credential] = {
+      :initiator => 'merchant',
+      :reason_type => 'unscheduled',
+      :initial_transaction => false,
+      :network_transaction_id => '016150703802094'
+    }
+    assert response = @gateway.authorize(@amount, @credit_card, @options)
+    assert_equal 'Successful transaction', response.message
+    assert_success response
+  end
+
+  def test_successful_first_recurring_cof_transaction
+    @options[:stored_credential] = {
+      :initiator => 'cardholder',
+      :reason_type => 'recurring',
+      :initial_transaction => true,
+      :network_transaction_id => ''
+    }
+    assert response = @gateway.authorize(@amount, @credit_card, @options)
+    assert_equal 'Successful transaction', response.message
+    assert_success response
+  end
+
+  def test_successful_subsequent_recurring_cof_transaction
+    @options[:stored_credential] = {
+      :initiator => 'merchant',
+      :reason_type => 'recurring',
+      :initial_transaction => false,
+      :network_transaction_id => '016150703802094'
+    }
+    assert response = @gateway.authorize(@amount, @credit_card, @options)
+    assert_equal 'Successful transaction', response.message
+    assert_success response
   end
 
   def pares
@@ -439,10 +577,16 @@ eNqdmFuTqkgSgN+N8D90zD46M4B3J+yOKO6goNyFN25yEUHkUsiv31K7T/ec6dg9u75YlWRlZVVmflWw
     PARES
   end
 
+  def test_successful_verify_with_elo
+    response = @gateway.verify(@elo_credit_card, @options)
+    assert_equal 'Successful transaction', response.message
+    assert_success response
+  end
+
   def test_verify_credentials
     assert @gateway.verify_credentials
 
-    gateway = CyberSourceGateway.new(login: "an_unknown_login", password: "unknown_password")
+    gateway = CyberSourceGateway.new(login: 'an_unknown_login', password: 'unknown_password')
     assert !gateway.verify_credentials
   end
 
