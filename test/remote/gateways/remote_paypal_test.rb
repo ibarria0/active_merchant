@@ -99,7 +99,7 @@ class PaypalTest < Test::Unit::TestCase
   end
 
   def test_failed_reauthorization
-    return if not @three_days_old_auth_id2  # was authed for $10, attempt $20
+    return if not @three_days_old_auth_id2 # was authed for $10, attempt $20
     auth = @gateway.reauthorize(2000, @three_days_old_auth_id2)
     assert_false auth?
     assert !auth.authorization
@@ -256,4 +256,17 @@ class PaypalTest < Test::Unit::TestCase
     assert_success response2
   end
 
+  def test_successful_purchase_with_3ds_version_1
+    params = @params.merge!({
+      three_d_secure: {
+          trans_status: 'Y',
+          eci: '05',
+          cavv: 'AgAAAAAAAIR8CQrXcIhbQAAAAAA',
+          xid: 'MDAwMDAwMDAwMDAwMDAwMzIyNzY='
+      }
+    })
+    response = @gateway.purchase(@amount, @credit_card, params)
+    assert_success response
+    assert response.params['transaction_id']
+  end
 end

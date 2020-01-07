@@ -123,7 +123,7 @@ module ActiveMerchant #:nodoc:
 
       def scrub(transcript)
         transcript.
-          gsub(%r((password=)\w+), '\1[FILTERED]').
+          gsub(%r((password=)[^&\n]*), '\1[FILTERED]').
           gsub(%r((ccnumber=)\d+), '\1[FILTERED]').
           gsub(%r((cvv=)\d+), '\1[FILTERED]').
           gsub(%r((checkaba=)\d+), '\1[FILTERED]').
@@ -220,7 +220,7 @@ module ActiveMerchant #:nodoc:
           post[:city] = billing_address[:city]
           post[:state] = billing_address[:state]
           post[:country] = billing_address[:country]
-          post[:zip]    = billing_address[:zip]
+          post[:zip] = billing_address[:zip]
           post[:phone] = billing_address[:phone]
         end
 
@@ -231,7 +231,7 @@ module ActiveMerchant #:nodoc:
           post[:shipping_city] = shipping_address[:city]
           post[:shipping_state] = shipping_address[:state]
           post[:shipping_country] = shipping_address[:country]
-          post[:shipping_zip]    = shipping_address[:zip]
+          post[:shipping_zip] = shipping_address[:zip]
           post[:shipping_phone] = shipping_address[:phone]
         end
       end
@@ -292,7 +292,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def headers
-        { 'Content-Type'  => 'application/x-www-form-urlencoded;charset=UTF-8' }
+        { 'Content-Type' => 'application/x-www-form-urlencoded;charset=UTF-8' }
       end
 
       def post_data(action, params)

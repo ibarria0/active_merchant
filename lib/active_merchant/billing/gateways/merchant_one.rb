@@ -91,15 +91,13 @@ module ActiveMerchant #:nodoc:
         ret = ''
         for key in parameters.keys
           ret += "#{key}=#{CGI.escape(parameters[key].to_s)}"
-          if key != parameters.keys.last
-            ret += '&'
-          end
+          ret += '&' if key != parameters.keys.last
         end
         ret.to_s
       end
 
       def parse(data)
-        responses =  CGI.parse(data).inject({}) { |h, (k, v)| h[k] = v.first; h }
+        responses = CGI.parse(data).inject({}) { |h, (k, v)| h[k] = v.first; h }
         Response.new(
           (responses['response'].to_i == 1),
           responses['responsetext'],

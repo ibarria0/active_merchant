@@ -16,9 +16,12 @@ class RemoteWorldpayTest < Test::Unit::TestCase
       :verification_value => '737',
       :brand => 'elo'
     )
+    @cabal_card = credit_card('6035220000000006')
+    @naranja_card = credit_card('5895620000000002')
     @sodexo_voucher = credit_card('6060704495764400', brand: 'sodexo')
     @declined_card = credit_card('4111111111111111', :first_name => nil, :last_name => 'REFUSED')
     @threeDS_card = credit_card('4111111111111111', :first_name => nil, :last_name => '3D')
+    @threeDS2_card = credit_card('4111111111111111', :first_name => nil, :last_name => '3DS_V2_FRICTIONLESS_IDENTIFIED')
     @threeDS_card_external_MPI = credit_card('4444333322221111', :first_name => 'AA', :last_name => 'BD')
 
     @options = {
@@ -43,6 +46,18 @@ class RemoteWorldpayTest < Test::Unit::TestCase
     assert_equal 'SUCCESS', response.message
   end
 
+  def test_successful_purchase_with_cabal
+    response = @gateway.purchase(@amount, @cabal_card, @options.merge(currency: 'ARS'))
+    assert_success response
+    assert_equal 'SUCCESS', response.message
+  end
+
+  def test_successful_purchase_with_naranja
+    response = @gateway.purchase(@amount, @naranja_card, @options.merge(currency: 'ARS'))
+    assert_success response
+    assert_equal 'SUCCESS', response.message
+  end
+
   def test_successful_authorize_avs_and_cvv
     card = credit_card('4111111111111111', :verification_value => 555)
     assert response = @gateway.authorize(@amount, card, @options.merge(billing_address: address.update(zip: 'CCCC')))
@@ -50,6 +65,13 @@ class RemoteWorldpayTest < Test::Unit::TestCase
     assert_equal 'SUCCESS', response.message
     assert_match %r{Street address does not match, but 5-digit postal code matches}, response.avs_result['message']
     assert_match %r{CVV matches}, response.cvv_result['message']
+  end
+
+  def test_successful_3ds2_authorize
+    options = @options.merge({execute_threed: true, three_ds_version: '2.0'})
+    assert response = @gateway.authorize(@amount, @threeDS2_card, options)
+    assert_success response
+    assert_equal 'SUCCESS', response.message
   end
 
   def test_successful_purchase_with_hcg_additional_data
@@ -142,6 +164,13 @@ class RemoteWorldpayTest < Test::Unit::TestCase
     refute first_message.params['pa_request'].blank?
     refute first_message.params['cookie'].blank?
     refute first_message.params['session_id'].blank?
+  end
+
+  # Ensure the account is configured to use this feature to proceed successfully
+  def test_marking_3ds_purchase_as_moto
+    assert response = @gateway.purchase(@amount, @credit_card, @options.merge(metadata: { manual_entry: true }))
+    assert_success response
+    assert_equal 'SUCCESS', response.message
   end
 
   def test_successful_auth_and_capture_with_normalized_stored_credential
@@ -448,7 +477,7 @@ class RemoteWorldpayTest < Test::Unit::TestCase
 
   def test_transcript_scrubbing
     transcript = capture_transcript(@gateway) do
-      @gateway.purchase(@amount, @credit_card,  @options)
+      @gateway.purchase(@amount, @credit_card, @options)
     end
     clean_transcript = @gateway.scrub(transcript)
 
@@ -486,12 +515,30 @@ class RemoteWorldpayTest < Test::Unit::TestCase
   #   puts 'auth: ' + response.authorization
   # end
   #
-  # def test_refund
-  #   refund = @gateway.refund(@amount, '39270fd70be13aab55f84e28be45cad3')
-  #   assert_success refund
-  #   assert_equal 'SUCCESS', refund.message
-  # end
-  #
+  def test_refund
+    response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_success response
+    assert_equal 'SUCCESS', response.message
+    assert response.authorization
+
+    refund = @gateway.refund(@amount, response.authorization, authorization_validated: true)
+    assert_success refund
+    assert_equal 'SUCCESS', refund.message
+  end
+
+  def test_multiple_refunds
+    purchase = @gateway.purchase(@amount, @credit_card, @options)
+    assert_success purchase
+    assert_equal 'SUCCESS', purchase.message
+
+    partial_amount = @amount - 1
+    assert_success refund1 = @gateway.refund(partial_amount, purchase.authorization, authorization_validated: true)
+    assert_equal 'SUCCESS', refund1.message
+
+    assert_success refund2 = @gateway.refund(@amount - partial_amount, purchase.authorization, authorization_validated: true)
+    assert_equal 'SUCCESS', refund2.message
+  end
+
   # def test_void_fails_unless_status_is_authorised
   #   response = @gateway.void('replace_with_authorization') # existing transaction in CAPTURED state
   #   assert_failure response

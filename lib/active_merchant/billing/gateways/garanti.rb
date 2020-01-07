@@ -104,7 +104,7 @@ module ActiveMerchant #:nodoc:
       def build_authorize_request(money, credit_card, options)
         build_xml_request(money, credit_card, options) do |xml|
           add_customer_data(xml, options)
-          add_order_data(xml, options)  do
+          add_order_data(xml, options) do
             add_addresses(xml, options)
           end
           add_credit_card(xml, credit_card)
@@ -137,9 +137,7 @@ module ActiveMerchant #:nodoc:
           xml.tag! 'OrderID', format_order_id(options[:order_id])
           xml.tag! 'GroupID'
 
-          if block_given?
-            yield xml
-          end
+          yield xml if block_given?
         end
       end
 

@@ -136,13 +136,9 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_customer_data(xml, options)
-        if options.has_key? :customer
-          xml.tag! 'CUSTOMERID', options[:customer]
-        end
+        xml.tag! 'CUSTOMERID', options[:customer] if options.has_key? :customer
 
-        if options.has_key? :ip
-          xml.tag! 'CUSTOMERIP', options[:ip]
-        end
+        xml.tag! 'CUSTOMERIP', options[:ip] if options.has_key? :ip
       end
 
       def add_address(xml, creditcard, options)
@@ -161,7 +157,7 @@ module ActiveMerchant #:nodoc:
             xml.tag! 'FIRSTNAME', creditcard.first_name
             xml.tag! 'LASTNAME', creditcard.last_name
             xml.tag! 'PHONE', address[:phone].to_s
-            xml.tag! 'STATE', address[:state].blank?  ? 'n/a' : address[:state]
+            xml.tag! 'STATE', address[:state].blank? ? 'n/a' : address[:state]
             xml.tag! 'ZIP', address[:zip].to_s
           end
         end
@@ -182,7 +178,7 @@ module ActiveMerchant #:nodoc:
               xml.tag! 'LASTNAME', address[:last_name].to_s
             end
 
-            xml.tag! 'STATE', address[:state].blank?  ? 'n/a' : address[:state]
+            xml.tag! 'STATE', address[:state].blank? ? 'n/a' : address[:state]
             xml.tag! 'ZIP', address[:zip].to_s
           end
         else

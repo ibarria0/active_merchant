@@ -379,11 +379,12 @@ module ActiveMerchant #:nodoc:
       end
 
       def build_url(action)
-        endpoint = case action
-        when :purchase, :authorization then 'vspdirect-register'
-        when :store then 'directtoken'
-        else TRANSACTIONS[action].downcase
-        end
+        endpoint =
+          case action
+          when :purchase, :authorization then 'vspdirect-register'
+          when :store then 'directtoken'
+          else TRANSACTIONS[action].downcase
+          end
         "#{test? ? self.test_url : self.live_url}/#{endpoint}.vsp"
       end
 
@@ -393,7 +394,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def message_from(response)
-        response['Status'] == APPROVED ? 'Success' : (response['StatusDetail'] || 'Unspecified error')    # simonr 20080207 can't actually get non-nil blanks, so this is shorter
+        response['Status'] == APPROVED ? 'Success' : (response['StatusDetail'] || 'Unspecified error') # simonr 20080207 can't actually get non-nil blanks, so this is shorter
       end
 
       def post_data(action, parameters = {})
@@ -403,9 +404,7 @@ module ActiveMerchant #:nodoc:
           :VPSProtocol => @options.fetch(:protocol_version, '3.00')
         )
 
-        if(application_id && (application_id != Gateway.application_id))
-          parameters.update(:ReferrerID => application_id)
-        end
+        parameters.update(:ReferrerID => application_id) if application_id && (application_id != Gateway.application_id)
 
         parameters.collect { |key, value| "#{key}=#{CGI.escape(value.to_s)}" }.join('&')
       end

@@ -63,6 +63,7 @@ module ActiveMerchant #:nodoc:
         add_creditcard(post, creditcard)
         add_standard_parameters('pay', post, options[:unique_id])
         add_3ds(post, options)
+        add_tx_source(post, options)
 
         commit(post)
       end
@@ -83,6 +84,7 @@ module ActiveMerchant #:nodoc:
         add_amount(post, money, options)
         add_advanced_user(post)
         add_standard_parameters('capture', post, options[:unique_id])
+        add_tx_source(post, options)
 
         commit(post)
       end
@@ -99,6 +101,7 @@ module ActiveMerchant #:nodoc:
         add_amount(post, money, options)
         add_advanced_user(post)
         add_standard_parameters('refund', post, options[:unique_id])
+        add_tx_source(post, options)
 
         commit(post)
       end
@@ -110,6 +113,7 @@ module ActiveMerchant #:nodoc:
 
         add_advanced_user(post)
         add_standard_parameters('voidAuthorisation', post, options[:unique_id])
+        add_tx_source(post, options)
 
         commit(post)
       end
@@ -191,9 +195,7 @@ module ActiveMerchant #:nodoc:
         response_hash = parse(data)
 
         expected_secure_hash = calculate_secure_hash(response_hash, @options[:secure_hash])
-        unless response_hash[:SecureHash] == expected_secure_hash
-          raise SecurityError, 'Secure Hash mismatch, response may be tampered with'
-        end
+        raise SecurityError, 'Secure Hash mismatch, response may be tampered with' unless response_hash[:SecureHash] == expected_secure_hash
 
         response_object(response_hash)
       end
@@ -241,6 +243,10 @@ module ActiveMerchant #:nodoc:
         post['3DSstatus'] = options[:three_ds_status] if options[:three_ds_status]
       end
 
+      def add_tx_source(post, options)
+        post[:TxSource] = options[:tx_source] if options[:tx_source]
+      end
+
       def add_creditcard(post, creditcard)
         post[:CardNum] = creditcard.number
         post[:CardSecurityCode] = creditcard.verification_value if creditcard.verification_value?
@@ -248,7 +254,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_creditcard_type(post, card_type)
-        post[:Gateway]  = 'ssl'
+        post[:Gateway] = 'ssl'
         post[:card] = CARD_TYPES.detect { |ct| ct.am_code == card_type }.migs_long_code
       end
 

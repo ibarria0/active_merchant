@@ -13,7 +13,7 @@ module ActiveMerchant #:nodoc:
       self.homepage_url = 'https://www.barclaycardsmartpay.com/'
       self.display_name = 'Barclaycard Smartpay'
 
-      API_VERSION = 'v30'
+      API_VERSION = 'v40'
 
       def initialize(options = {})
         requires!(options, :company, :merchant, :password)
@@ -37,7 +37,9 @@ module ActiveMerchant #:nodoc:
         post[:card] = credit_card_hash(creditcard)
         post[:billingAddress] = billing_address_hash(options) if options[:billing_address]
         post[:deliveryAddress] = shipping_address_hash(options) if options[:shipping_address]
-        add_3ds(post, options) if options[:execute_threed]
+        post[:shopperStatement] = options[:shopper_statement] if options[:shopper_statement]
+
+        add_3ds(post, options)
         commit('authorise', post)
       end
 
@@ -127,25 +129,25 @@ module ActiveMerchant #:nodoc:
       # Smartpay may return AVS codes not covered by standard AVSResult codes.
       # Smartpay's descriptions noted below.
       AVS_MAPPING = {
-        '0'  => 'R',  # Unknown
-        '1'  => 'A',	# Address matches, postal code doesn't
-        '2'  => 'N',	# Neither postal code nor address match
-        '3'  => 'R',	# AVS unavailable
-        '4'  => 'E',	# AVS not supported for this card type
-        '5'  => 'U',	# No AVS data provided
-        '6'  => 'Z',	# Postal code matches, address doesn't match
-        '7'  => 'D',	# Both postal code and address match
-        '8'  => 'U',	# Address not checked, postal code unknown
-        '9'  => 'B',	# Address matches, postal code unknown
-        '10' => 'N',	# Address doesn't match, postal code unknown
-        '11' => 'U',	# Postal code not checked, address unknown
-        '12' => 'B',	# Address matches, postal code not checked
-        '13' => 'U',	# Address doesn't match, postal code not checked
-        '14' => 'P',	# Postal code matches, address unknown
-        '15' => 'P',	# Postal code matches, address not checked
-        '16' => 'N',	# Postal code doesn't match, address unknown
-        '17' => 'U',  # Postal code doesn't match, address not checked
-        '18' => 'I'	  # Neither postal code nor address were checked
+        '0'  => 'R', # Unknown
+        '1'  => 'A', # Address matches, postal code doesn't
+        '2'  => 'N', # Neither postal code nor address match
+        '3'  => 'R', # AVS unavailable
+        '4'  => 'E', # AVS not supported for this card type
+        '5'  => 'U', # No AVS data provided
+        '6'  => 'Z', # Postal code matches, address doesn't match
+        '7'  => 'D', # Both postal code and address match
+        '8'  => 'U', # Address not checked, postal code unknown
+        '9'  => 'B', # Address matches, postal code unknown
+        '10' => 'N', # Address doesn't match, postal code unknown
+        '11' => 'U', # Postal code not checked, address unknown
+        '12' => 'B', # Address matches, postal code not checked
+        '13' => 'U', # Address doesn't match, postal code not checked
+        '14' => 'P', # Postal code matches, address unknown
+        '15' => 'P', # Postal code matches, address not checked
+        '16' => 'N', # Postal code doesn't match, address unknown
+        '17' => 'U', # Postal code doesn't match, address not checked
+        '18' => 'I'	 # Neither postal code nor address were checked
       }
 
       def commit(action, post, account = 'ws', password = @options[:password])
@@ -186,7 +188,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def parse_avs_code(response)
-        AVS_MAPPING[response['avsResult'][0..1].strip] if response['avsResult']
+        AVS_MAPPING[response['additionalData']['avsResult'][0..1].strip] if response.dig('additionalData', 'avsResult')
       end
 
       def flatten_hash(hash, prefix = nil)
@@ -210,12 +212,18 @@ module ActiveMerchant #:nodoc:
       end
 
       def parse(response)
-        Hash[
-          response.split('&').map do |x|
-            key, val = x.split('=', 2)
-            [key.split('.').last, CGI.unescape(val)]
+        parsed_response = {}
+        params = CGI.parse(response)
+        params.each do |key, value|
+          parsed_key = key.split('.', 2)
+          if parsed_key.size > 1
+            parsed_response[parsed_key[0]] ||= {}
+            parsed_response[parsed_key[0]][parsed_key[1]] = value[0]
+          else
+            parsed_response[parsed_key[0]] = value[0]
           end
-        ]
+        end
+        parsed_response
       end
 
       def post_data(data)
@@ -343,8 +351,39 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_3ds(post, options)
-        post[:additionalData] = { executeThreeD: 'true' }
-        post[:browserInfo] = { userAgent: options[:user_agent], acceptHeader: options[:accept_header] }
+        if three_ds_2_options = options[:three_ds_2]
+          device_channel = three_ds_2_options[:channel]
+          if device_channel == 'app'
+            post[:threeDS2RequestData] = { deviceChannel: device_channel }
+          else
+            add_browser_info(three_ds_2_options[:browser_info], post)
+            post[:threeDS2RequestData] = { deviceChannel: device_channel, notificationURL: three_ds_2_options[:notification_url] }
+          end
+
+          if options.has_key?(:execute_threed)
+            post[:additionalData] ||= {}
+            post[:additionalData][:executeThreeD] = options[:execute_threed]
+            post[:additionalData][:scaExemption] = options[:sca_exemption] if options[:sca_exemption]
+          end
+        else
+          return unless options[:execute_threed] || options[:threed_dynamic]
+          post[:browserInfo] = { userAgent: options[:user_agent], acceptHeader: options[:accept_header] }
+          post[:additionalData] = { executeThreeD: 'true' } if options[:execute_threed]
+        end
+      end
+
+      def add_browser_info(browser_info, post)
+        return unless browser_info
+        post[:browserInfo] = {
+          acceptHeader: browser_info[:accept_header],
+          colorDepth: browser_info[:depth],
+          javaEnabled: browser_info[:java],
+          language: browser_info[:language],
+          screenHeight: browser_info[:height],
+          screenWidth: browser_info[:width],
+          timeZoneOffset: browser_info[:timezone],
+          userAgent: browser_info[:user_agent]
+        }
       end
     end
   end
