@@ -8,7 +8,7 @@ module ActiveMerchant #:nodoc:
                                   'HU', 'IS', 'IE', 'IT', 'LV', 'LI', 'LT', 'LU', 'MT', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'GB']
 
       self.default_currency    = 'EUR'
-      self.currencies_without_fractions = %w(BIF BYR DJF GNF JPY KMF KRW PYG RWF VND VUV XAF XOF XPF)
+      self.currencies_without_fractions = %w(BIF CLP DJF GNF JPY KMF KRW PYG RWF UGX VND VUV XAF XOF XPF)
       self.supported_cardtypes = [:visa, :master]
 
       self.homepage_url = 'https://www.clearhaus.com'
@@ -128,7 +128,7 @@ module ActiveMerchant #:nodoc:
       def add_payment(post, payment)
         card = {}
         card[:pan]          = payment.number
-        card[:expire_month] = '%02d'% payment.month
+        card[:expire_month] = '%02d' % payment.month
         card[:expire_year]  = payment.year
 
         card[:csc] = payment.verification_value if payment.verification_value?
@@ -164,7 +164,8 @@ module ActiveMerchant #:nodoc:
           begin
             parse(ssl_post(url, body, headers))
           rescue ResponseError => e
-            raise unless(e.response.code.to_s =~ /400/)
+            raise unless e.response.code.to_s =~ /400/
+
             parse(e.response.body)
           end
 

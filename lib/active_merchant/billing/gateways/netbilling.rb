@@ -14,16 +14,16 @@ module ActiveMerchant #:nodoc:
       self.live_url = self.test_url = 'https://secure.netbilling.com:1402/gw/sas/direct3.1'
 
       TRANSACTIONS = {
-        :authorization => 'A',
-        :purchase      => 'S',
-        :refund        => 'R',
-        :credit        => 'C',
-        :capture       => 'D',
-        :void          => 'U',
-        :quasi         => 'Q'
+        authorization: 'A',
+        purchase:      'S',
+        refund:        'R',
+        credit:        'C',
+        capture:       'D',
+        void:          'U',
+        quasi:         'Q'
       }
 
-      SUCCESS_CODES = [ '1', 'T' ]
+      SUCCESS_CODES = ['1', 'T']
       SUCCESS_MESSAGE = 'The transaction was approved'
       FAILURE_MESSAGE = 'The transaction failed'
       TEST_LOGIN = '104901072025'
@@ -194,14 +194,15 @@ module ActiveMerchant #:nodoc:
         response = parse(ssl_post(self.live_url, post_data(action, parameters)))
 
         Response.new(success?(response), message_from(response), response,
-          :test => test_response?(response),
-          :authorization => response[:trans_id],
-          :avs_result => { :code => response[:avs_code]},
-          :cvv_result => response[:cvv2_code]
+          test: test_response?(response),
+          authorization: response[:trans_id],
+          avs_result: { code: response[:avs_code]},
+          cvv_result: response[:cvv2_code]
         )
       rescue ActiveMerchant::ResponseError => e
-        raise unless(e.response.code =~ /^[67]\d\d$/)
-        return Response.new(false, e.response.message, {:status_code => e.response.code}, :test => test?)
+        raise unless e.response.code =~ /^[67]\d\d$/
+
+        return Response.new(false, e.response.message, {status_code: e.response.code}, test: test?)
       end
 
       def test_response?(response)
@@ -224,7 +225,6 @@ module ActiveMerchant #:nodoc:
 
         parameters.reject { |k, v| v.blank? }.collect { |key, value| "#{key}=#{CGI.escape(value.to_s)}" }.join('&')
       end
-
     end
   end
 end

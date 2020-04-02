@@ -324,7 +324,7 @@ module ActiveMerchant #:nodoc:
 
       def headers
         {
-          'Content-Type'  => 'application/json'
+          'Content-Type' => 'application/json'
         }
       end
 
@@ -364,6 +364,7 @@ module ActiveMerchant #:nodoc:
       def error_from(response)
         return response['error'] if response['error']
         return 'Failed' unless response.key?('result')
+
         return response['result']['pgwResponseCode'] || response['result']['processor']['responseCode'] || 'Failed'
       end
 
@@ -397,7 +398,7 @@ module ActiveMerchant #:nodoc:
           false,
           message_from(response),
           response,
-          :test => test?
+          test: test?
         )
       end
 

@@ -51,6 +51,7 @@ module ActiveMerchant #:nodoc:
         add_card_or_token(post, payment)
         add_address(post, options)
         add_customer_responsible_person(post, payment, options)
+        add_additional_data(post, options)
 
         commit(:purchase, post)
       end
@@ -119,7 +120,7 @@ module ActiveMerchant #:nodoc:
 
       def scrub(transcript)
         transcript.
-          gsub(/(integration_key\\?":\\?")(\d*)/, '\1[FILTERED]').
+          gsub(/(integration_key\\?":\\?")(\w*)/, '\1[FILTERED]').
           gsub(/(card_number\\?":\\?")(\d*)/, '\1[FILTERED]').
           gsub(/(card_cvv\\?":\\?")(\d*)/, '\1[FILTERED]')
       end
@@ -170,7 +171,7 @@ module ActiveMerchant #:nodoc:
       def add_invoice(post, money, options)
         post[:payment][:amount_total] = amount(money)
         post[:payment][:currency_code] = (options[:currency] || currency(money))
-        post[:payment][:merchant_payment_code] = options[:order_id]
+        post[:payment][:merchant_payment_code] = Digest::MD5.hexdigest(options[:order_id])
         post[:payment][:instalments] = options[:instalments] || 1
       end
 
@@ -198,13 +199,18 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      def add_additional_data(post, options)
+        post[:device_id] = options[:device_id] if options[:device_id]
+        post[:metadata] = options[:metadata] if options[:metadata]
+      end
+
       def parse(body)
         JSON.parse(body)
       end
 
       def commit(action, parameters)
         url = url_for((test? ? test_url : live_url), action, parameters)
-        response = parse(ssl_request(HTTP_METHOD[action], url, post_data(action, parameters), {}))
+        response = parse(ssl_request(HTTP_METHOD[action], url, post_data(action, parameters), {'x-ebanx-client-user-agent': "ActiveMerchant/#{ActiveMerchant::VERSION}"}))
 
         success = success_from(action, response)
 
@@ -234,6 +240,7 @@ module ActiveMerchant #:nodoc:
 
       def message_from(response)
         return response['status_message'] if response['status'] == 'ERROR'
+
         response.try(:[], 'payment').try(:[], 'transaction_status').try(:[], 'description')
       end
 
@@ -248,22 +255,26 @@ module ActiveMerchant #:nodoc:
       def post_data(action, parameters = {})
         return nil if requires_http_get(action)
         return convert_to_url_form_encoded(parameters) if action == :refund
+
         "request_body=#{parameters.to_json}"
       end
 
       def url_for(hostname, action, parameters)
         return "#{hostname}#{URL_MAP[action]}?#{convert_to_url_form_encoded(parameters)}" if requires_http_get(action)
+
         "#{hostname}#{URL_MAP[action]}"
       end
 
       def requires_http_get(action)
         return true if [:capture, :void].include?(action)
+
         false
       end
 
       def convert_to_url_form_encoded(parameters)
         parameters.map do |key, value|
           next if value != false && value.blank?
+
           "#{key}=#{value}"
         end.compact.join('&')
       end
@@ -271,6 +282,7 @@ module ActiveMerchant #:nodoc:
       def error_code_from(response, success)
         unless success
           return response['status_code'] if response['status'] == 'ERROR'
+
           response.try(:[], 'payment').try(:[], 'transaction_status').try(:[], 'code')
         end
       end

@@ -7,12 +7,12 @@ class RemotePaymentezTest < Test::Unit::TestCase
     @amount = 100
     @credit_card = credit_card('4111111111111111', verification_value: '666')
     @elo_credit_card = credit_card('6362970000457013',
-      :month => 10,
-      :year => 2020,
-      :first_name => 'John',
-      :last_name => 'Smith',
-      :verification_value => '737',
-      :brand => 'elo'
+      month: 10,
+      year: 2020,
+      first_name: 'John',
+      last_name: 'Smith',
+      verification_value: '737',
+      brand: 'elo'
     )
     @declined_card = credit_card('4242424242424242', verification_value: '666')
     @options = {
@@ -105,6 +105,7 @@ class RemotePaymentezTest < Test::Unit::TestCase
 
     assert refund = @gateway.refund(@amount, auth.authorization, @options)
     assert_success refund
+    assert_equal 'Completed', refund.message
   end
 
   def test_successful_refund_with_elo
@@ -113,6 +114,7 @@ class RemotePaymentezTest < Test::Unit::TestCase
 
     assert refund = @gateway.refund(@amount, auth.authorization, @options)
     assert_success refund
+    assert_equal 'Completed', refund.message
   end
 
   def test_successful_void
@@ -121,6 +123,7 @@ class RemotePaymentezTest < Test::Unit::TestCase
 
     assert void = @gateway.void(auth.authorization)
     assert_success void
+    assert_equal 'Completed', void.message
   end
 
   def test_successful_void_with_elo
@@ -129,6 +132,7 @@ class RemotePaymentezTest < Test::Unit::TestCase
 
     assert void = @gateway.void(auth.authorization)
     assert_success void
+    assert_equal 'Completed', void.message
   end
 
   def test_failed_void

@@ -1,21 +1,20 @@
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class SecureNetGateway < Gateway
-
       API_VERSION = '4.0'
 
       TRANSACTIONS = {
-        :auth_only                      => '0000',
-        :auth_capture                   => '0100',
-        :prior_auth_capture             => '0200',
-        :void                           => '0400',
-        :credit                         => '0500'
+        auth_only:            '0000',
+        auth_capture:         '0100',
+        prior_auth_capture:   '0200',
+        void:                 '0400',
+        credit:               '0500'
       }
 
       XML_ATTRIBUTES = {
-                        'xmlns' => 'http://gateway.securenet.com/API/Contracts',
-                        'xmlns:i' => 'http://www.w3.org/2001/XMLSchema-instance'
-                       }
+        'xmlns' => 'http://gateway.securenet.com/API/Contracts',
+        'xmlns:i' => 'http://www.w3.org/2001/XMLSchema-instance'
+      }
       NIL_ATTRIBUTE = { 'i:nil' => 'true' }
 
       self.supported_countries = ['US']
@@ -28,8 +27,8 @@ module ActiveMerchant #:nodoc:
 
       APPROVED, DECLINED = 1, 2
 
-      CARD_CODE_ERRORS = %w( N S )
-      AVS_ERRORS = %w( A E N R W Z )
+      CARD_CODE_ERRORS = %w(N S)
+      AVS_ERRORS = %w(A E N R W Z)
 
       def initialize(options = {})
         requires!(options, :login, :password)
@@ -81,10 +80,10 @@ module ActiveMerchant #:nodoc:
         response = parse(data)
 
         Response.new(success?(response), message_from(response), response,
-          :test => test?,
-          :authorization => build_authorization(response),
-          :avs_result => { :code => response[:avs_result_code] },
-          :cvv_result => response[:card_code_response_code]
+          test: test?,
+          authorization: build_authorization(response),
+          avs_result: { code: response[:avs_result_code] },
+          cvv_result: response[:card_code_response_code]
         )
       end
 
@@ -257,7 +256,6 @@ module ActiveMerchant #:nodoc:
       def build_authorization(response)
         [response[:transactionid], response[:transactionamount], response[:last4_digits]].join('|')
       end
-
     end
   end
 end

@@ -287,10 +287,10 @@ module ActiveMerchant #:nodoc:
         Response.new(success,
           success ? 'APPROVED' : message_from(response),
           response,
-          :test => test?,
-          :authorization => authorization_from(response, money, token),
-          :avs_result => { :code => response[:avs] },
-          :cvv_result => response[:cvv2]
+          test: test?,
+          authorization: authorization_from(response, money, token),
+          avs_result: { code: response[:avs] },
+          cvv_result: response[:cvv2]
         )
       end
 
@@ -333,7 +333,7 @@ module ActiveMerchant #:nodoc:
 
       def authorization_from(response, money, previous_token)
         original_amount = amount(money) if money
-        [ response[:transaction_id], response[:approval], original_amount, (response[:token] || previous_token)].join(';')
+        [response[:transaction_id], response[:approval], original_amount, (response[:token] || previous_token)].join(';')
       end
 
       def add_credit_card(xml, credit_card)

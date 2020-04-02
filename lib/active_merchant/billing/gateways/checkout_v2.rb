@@ -102,13 +102,21 @@ module ActiveMerchant #:nodoc:
 
       def add_payment_method(post, payment_method, options)
         post[:source] = {}
-        post[:source][:type] = 'card'
-        post[:source][:name] = payment_method.name
-        post[:source][:number] = payment_method.number
-        post[:source][:cvv] = payment_method.verification_value
+        if payment_method.is_a?(NetworkTokenizationCreditCard) && payment_method.source == :network_token
+          post[:source][:type] = 'network_token'
+          post[:source][:token] = payment_method.number
+          post[:source][:token_type] = payment_method.brand == 'visa' ? 'vts' : 'mdes'
+          post[:source][:cryptogram] = payment_method.payment_cryptogram
+          post[:source][:eci] = options[:eci] || '05'
+        else
+          post[:source][:type] = 'card'
+          post[:source][:name] = payment_method.name
+          post[:source][:number] = payment_method.number
+          post[:source][:cvv] = payment_method.verification_value
+          post[:source][:stored] = 'true' if options[:card_on_file] == true
+        end
         post[:source][:expiry_year] = format(payment_method.year, :four_digits)
         post[:source][:expiry_month] = format(payment_method.month, :two_digits)
-        post[:source][:stored] = 'true' if options[:card_on_file] == true
       end
 
       def add_customer_data(post, options)
@@ -157,6 +165,7 @@ module ActiveMerchant #:nodoc:
           response['id'] = response['_links']['payment']['href'].split('/')[-1] if action == :capture && response.key?('_links')
         rescue ResponseError => e
           raise unless e.response.code.to_s =~ /4\d\d/
+
           response = parse(e.response.body)
         end
 
@@ -234,7 +243,7 @@ module ActiveMerchant #:nodoc:
         elsif response['error_type']
           response['error_type'] + ': ' + response['error_codes'].first
         else
-          response['response_summary'] || response['response_code'] || 'Unable to read error message'
+          response['response_summary'] || response['response_code'] || response['status'] || 'Unable to read error message'
         end
       end
 
@@ -257,6 +266,7 @@ module ActiveMerchant #:nodoc:
 
       def error_code_from(succeeded, response)
         return if succeeded
+
         if response['error_type'] && response['error_codes']
           "#{response['error_type']}: #{response['error_codes'].join(', ')}"
         elsif response['error_type']

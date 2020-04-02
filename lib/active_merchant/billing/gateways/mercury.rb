@@ -12,8 +12,8 @@ module ActiveMerchant #:nodoc:
     # and +refund+ will become mandatory.
     class MercuryGateway < Gateway
       URLS = {
-        :test => 'https://w1.mercurycert.net/ws/ws.asmx',
-        :live => 'https://w1.mercurypay.com/ws/ws.asmx'
+        test: 'https://w1.mercurycert.net/ws/ws.asmx',
+        live: 'https://w1.mercurypay.com/ws/ws.asmx'
       }
 
       self.homepage_url = 'http://www.mercurypay.com'
@@ -51,14 +51,14 @@ module ActiveMerchant #:nodoc:
       def authorize(money, credit_card, options = {})
         requires!(options, :order_id)
 
-        request = build_non_authorized_request('PreAuth', money, credit_card, options.merge(:authorized => money))
+        request = build_non_authorized_request('PreAuth', money, credit_card, options.merge(authorized: money))
         commit('PreAuth', request)
       end
 
       def capture(money, authorization, options = {})
         requires!(options, :credit_card) unless @use_tokenization
 
-        request = build_authorized_request('PreAuthCapture', money, authorization, options[:credit_card], options.merge(:authorized => money))
+        request = build_authorized_request('PreAuthCapture', money, authorization, options[:credit_card], options.merge(authorized: money))
         commit('PreAuthCapture', request)
       end
 
@@ -230,7 +230,7 @@ module ActiveMerchant #:nodoc:
         xml.tag! 'CardType', CARD_CODES[credit_card.brand] if credit_card.brand
 
         include_cvv = !%w(Return PreAuthCapture).include?(action) && !credit_card.track_data.present?
-        xml.tag! 'CVVData', credit_card.verification_value if(include_cvv && credit_card.verification_value)
+        xml.tag! 'CVVData', credit_card.verification_value if include_cvv && credit_card.verification_value
       end
 
       def add_address(xml, options)
@@ -294,7 +294,7 @@ module ActiveMerchant #:nodoc:
         }
       end
 
-      SUCCESS_CODES = [ 'Approved', 'Success' ]
+      SUCCESS_CODES = ['Approved', 'Success']
 
       def commit(action, request)
         response = parse(action, ssl_post(endpoint_url, build_soap_request(request), build_header))
@@ -303,11 +303,11 @@ module ActiveMerchant #:nodoc:
         message = success ? 'Success' : message_from(response)
 
         Response.new(success, message, response,
-          :test => test?,
-          :authorization => authorization_from(response),
-          :avs_result => { :code => response[:avs_result] },
-          :cvv_result => response[:cvv_result],
-          :error_code => success ? nil : STANDARD_ERROR_CODE_MAPPING[response[:dsix_return_code]])
+          test: test?,
+          authorization: authorization_from(response),
+          avs_result: { code: response[:avs_result] },
+          cvv_result: response[:cvv_result],
+          error_code: success ? nil : STANDARD_ERROR_CODE_MAPPING[response[:dsix_return_code]])
       end
 
       def message_from(response)

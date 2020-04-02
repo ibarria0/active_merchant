@@ -21,7 +21,7 @@ module ActiveMerchant
       # American Express, Diners Club, JCB, International Maestro,
       # Style, Clydesdale Financial Services, Other
 
-      self.supported_cardtypes = [ :visa, :master, :american_express, :diners_club, :jcb, :maestro ]
+      self.supported_cardtypes = [:visa, :master, :american_express, :diners_club, :jcb, :maestro]
       self.homepage_url = 'http://www.paymentsolutionsltd.com/'
       self.display_name = 'PSL Payment Solutions'
 
@@ -260,10 +260,10 @@ module ActiveMerchant
         response = parse(ssl_post(self.live_url, post_data(request)))
 
         Response.new(response[:ResponseCode] == APPROVED, response[:Message], response,
-          :test => test?,
-          :authorization => response[:CrossReference],
-          :cvv_result => CVV_CODE[response[:AVSCV2Check]],
-          :avs_result => { :code => AVS_CODE[response[:AVSCV2Check]] }
+          test: test?,
+          authorization: response[:CrossReference],
+          cvv_result: CVV_CODE[response[:AVSCV2Check]],
+          avs_result: { code: AVS_CODE[response[:AVSCV2Check]] }
         )
       end
 

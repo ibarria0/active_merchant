@@ -1,7 +1,6 @@
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class PacNetRavenGateway < Gateway
-
       AVS_ADDRESS_CODES = {
         'avs_address_unavailable'   => 'X',
         'avs_address_not_checked'   => 'X',
@@ -123,14 +122,14 @@ module ActiveMerchant #:nodoc:
         test_mode = test? || message =~ /TESTMODE/
 
         Response.new(success?(response), message, response,
-          :test => test_mode,
-          :authorization => response['TrackingNumber'],
-          :fraud_review => fraud_review?(response),
-          :avs_result => {
-                          :postal_match => AVS_POSTAL_CODES[response['AVSPostalResponseCode']],
-                          :street_match => AVS_ADDRESS_CODES[response['AVSAddressResponseCode']]
-                         },
-          :cvv_result => CVV2_CODES[response['CVV2ResponseCode']]
+          test: test_mode,
+          authorization: response['TrackingNumber'],
+          fraud_review: fraud_review?(response),
+          avs_result: {
+            postal_match: AVS_POSTAL_CODES[response['AVSPostalResponseCode']],
+            street_match: AVS_ADDRESS_CODES[response['AVSAddressResponseCode']]
+          },
+          cvv_result: CVV2_CODES[response['CVV2ResponseCode']]
         )
       end
 
@@ -140,6 +139,7 @@ module ActiveMerchant #:nodoc:
 
       def endpoint(action)
         return 'void' if action == 'void'
+
         'submit'
       end
 

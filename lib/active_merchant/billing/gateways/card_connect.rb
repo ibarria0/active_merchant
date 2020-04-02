@@ -69,7 +69,7 @@ module ActiveMerchant #:nodoc:
 
       def require_valid_domain!(options, param)
         if options[param]
-          raise ArgumentError.new('not a valid cardconnect domain') unless /\Dcardconnect.com:\d{1,}\D/ =~ options[param]
+          raise ArgumentError.new('not a valid cardconnect domain') unless /https:\/\/\D*cardconnect.com/ =~ options[param]
         end
       end
 
@@ -287,7 +287,8 @@ module ActiveMerchant #:nodoc:
           error_code: error_code_from(response)
         )
       rescue ResponseError => e
-        return Response.new(false, 'Unable to authenticate.  Please check your credentials.', {}, :test => test?) if e.response.code == '401'
+        return Response.new(false, 'Unable to authenticate.  Please check your credentials.', {}, test: test?) if e.response.code == '401'
+
         raise
       end
 

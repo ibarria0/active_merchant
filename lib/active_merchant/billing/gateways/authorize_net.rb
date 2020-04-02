@@ -8,7 +8,7 @@ module ActiveMerchant
       self.test_url = 'https://apitest.authorize.net/xml/v1/request.api'
       self.live_url = 'https://api2.authorize.net/xml/v1/request.api'
 
-      self.supported_countries = %w(AD AT AU BE BG CA CH CY CZ DE DK EE ES FI FR GB GI GR HU IE IL IS IT LI LT LU LV MC MT NL NO PL PT RO SE SI SK SM TR US VA)
+      self.supported_countries = %w(AU CA US)
       self.default_currency = 'USD'
       self.money_format = :dollars
       self.supported_cardtypes = [:visa, :master, :american_express, :discover, :diners_club, :jcb, :maestro]
@@ -58,21 +58,21 @@ module ActiveMerchant
       }
 
       MARKET_TYPE = {
-        :moto  => '1',
-        :retail  => '2'
+        moto: '1',
+        retail: '2'
       }
 
       DEVICE_TYPE = {
-        :unknown => '1',
-        :unattended_terminal => '2',
-        :self_service_terminal => '3',
-        :electronic_cash_register => '4',
-        :personal_computer_terminal => '5',
-        :airpay => '6',
-        :wireless_pos => '7',
-        :website => '8',
-        :dial_terminal => '9',
-        :virtual_terminal => '10'
+        unknown: '1',
+        unattended_terminal: '2',
+        self_service_terminal: '3',
+        electronic_cash_register: '4',
+        personal_computer_terminal: '5',
+        airpay: '6',
+        wireless_pos: '7',
+        website: '8',
+        dial_terminal: '9',
+        virtual_terminal: '10'
       }
 
       class_attribute :duplicate_window
@@ -85,8 +85,8 @@ module ActiveMerchant
       AVS_REASON_CODES = %w(27 45)
 
       TRACKS = {
-          1 => /^%(?<format_code>.)(?<pan>[\d]{1,19}+)\^(?<name>.{2,26})\^(?<expiration>[\d]{0,4}|\^)(?<service_code>[\d]{0,3}|\^)(?<discretionary_data>.*)\?\Z/,
-          2 => /\A;(?<pan>[\d]{1,19}+)=(?<expiration>[\d]{0,4}|=)(?<service_code>[\d]{0,3}|=)(?<discretionary_data>.*)\?\Z/
+        1 => /^%(?<format_code>.)(?<pan>[\d]{1,19}+)\^(?<name>.{2,26})\^(?<expiration>[\d]{0,4}|\^)(?<service_code>[\d]{0,3}|\^)(?<discretionary_data>.*)\?\Z/,
+        2 => /\A;(?<pan>[\d]{1,19}+)=(?<expiration>[\d]{0,4}|=)(?<service_code>[\d]{0,3}|=)(?<discretionary_data>.*)\?\Z/
       }.freeze
 
       APPLE_PAY_DATA_DESCRIPTOR = 'COMMON.APPLE.INAPP.PAYMENT'
@@ -221,13 +221,13 @@ module ActiveMerchant
 
       def supports_network_tokenization?
         card = Billing::NetworkTokenizationCreditCard.new({
-          :number => '4111111111111111',
-          :month => 12,
-          :year => 20,
-          :first_name => 'John',
-          :last_name => 'Smith',
-          :brand => 'visa',
-          :payment_cryptogram => 'EHuWW9PiBkWvqE5juRwDzAUFBAk='
+          number: '4111111111111111',
+          month: 12,
+          year: 20,
+          first_name: 'John',
+          last_name: 'Smith',
+          brand: 'visa',
+          payment_cryptogram: 'EHuWW9PiBkWvqE5juRwDzAUFBAk='
         })
 
         request = post_data(:authorize) do |xml|
@@ -390,6 +390,7 @@ module ActiveMerchant
 
       def add_payment_source(xml, source, options, action = nil)
         return unless source
+
         if source.is_a?(String)
           add_token_payment_method(xml, source, options)
         elsif card_brand(source) == 'check'
@@ -517,6 +518,7 @@ module ActiveMerchant
 
       def add_market_type_device_type(xml, payment, options)
         return if payment.is_a?(String) || card_brand(payment) == 'check' || card_brand(payment) == 'apple_pay'
+
         if valid_track_data
           xml.retail do
             xml.marketType(options[:market_type] || MARKET_TYPE[:retail])
@@ -542,6 +544,7 @@ module ActiveMerchant
       def add_check(xml, check)
         xml.payment do
           xml.bankAccount do
+            xml.accountType(check.account_type)
             xml.routingNumber(check.routing_number)
             xml.accountNumber(check.account_number)
             xml.nameOnAccount(truncate(check.name, 22))
@@ -841,17 +844,17 @@ module ActiveMerchant
 
         response = {action: action}
 
-        response[:response_code] = if(element = doc.at_xpath('//transactionResponse/responseCode'))
+        response[:response_code] = if (element = doc.at_xpath('//transactionResponse/responseCode'))
                                      empty?(element.content) ? nil : element.content.to_i
                                    end
 
-        if(element = doc.at_xpath('//errors/error'))
+        if (element = doc.at_xpath('//errors/error'))
           response[:response_reason_code] = element.at_xpath('errorCode').content[/0*(\d+)$/, 1]
           response[:response_reason_text] = element.at_xpath('errorText').content.chomp('.')
-        elsif(element = doc.at_xpath('//transactionResponse/messages/message'))
+        elsif (element = doc.at_xpath('//transactionResponse/messages/message'))
           response[:response_reason_code] = element.at_xpath('code').content[/0*(\d+)$/, 1]
           response[:response_reason_text] = element.at_xpath('description').content.chomp('.')
-        elsif(element = doc.at_xpath('//messages/message'))
+        elsif (element = doc.at_xpath('//messages/message'))
           response[:response_reason_code] = element.at_xpath('code').content[/0*(\d+)$/, 1]
           response[:response_reason_text] = element.at_xpath('text').content.chomp('.')
         else
@@ -860,7 +863,7 @@ module ActiveMerchant
         end
 
         response[:avs_result_code] =
-          if(element = doc.at_xpath('//avsResultCode'))
+          if (element = doc.at_xpath('//avsResultCode'))
             empty?(element.content) ? nil : element.content
           end
 
@@ -960,7 +963,7 @@ module ActiveMerchant
         if response[:response_code] == DECLINED
           if CARD_CODE_ERRORS.include?(cvv_result.code)
             return cvv_result.message
-          elsif(AVS_REASON_CODES.include?(response[:response_reason_code]) && AVS_ERRORS.include?(avs_result.code))
+          elsif AVS_REASON_CODES.include?(response[:response_reason_code]) && AVS_ERRORS.include?(avs_result.code)
             return avs_result.message
           end
         end
@@ -1059,7 +1062,6 @@ module ActiveMerchant
           balance_on_card: parts[54] || '',
         }
       end
-
     end
   end
 end

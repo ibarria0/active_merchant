@@ -57,6 +57,13 @@ class RemoteCredoraxTest < Test::Unit::TestCase
     assert_equal 'Succeeded', response.message
   end
 
+  def test_successful_purchase_and_amount_for_non_decimal_currency
+    response = @gateway.purchase(14200, @credit_card, @options.merge(currency: 'JPY'))
+    assert_success response
+    assert_equal '142', response.params['A4']
+    assert_equal 'Succeeded', response.message
+  end
+
   def test_successful_purchase_with_extra_options
     response = @gateway.purchase(@amount, @credit_card, @options.merge(transaction_type: '10'))
     assert_success response
@@ -180,6 +187,14 @@ class RemoteCredoraxTest < Test::Unit::TestCase
     capture = @gateway.capture(@amount, response.authorization)
     assert_success capture
     assert_equal 'Succeeded', capture.message
+  end
+
+  def test_successful_authorize_with_authorization_details
+    options_with_auth_details = @options.merge({authorization_type: '2', multiple_capture_count: '5' })
+    response = @gateway.authorize(@amount, @credit_card, options_with_auth_details)
+    assert_success response
+    assert_equal 'Succeeded', response.message
+    assert response.authorization
   end
 
   def test_successful_authorize_with_auth_data_via_3ds1_fields

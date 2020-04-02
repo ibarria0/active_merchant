@@ -79,6 +79,7 @@ module ActiveMerchant #:nodoc:
         post = {}
 
         add_creditcard(post, creditcard)
+        post[:is_billing] = true if options[:recurring]
 
         commit(:post, 'credit_cards', post)
       end
@@ -149,7 +150,8 @@ module ActiveMerchant #:nodoc:
           begin
             parse(ssl_request(method, get_url(uri), parameters.to_json, headers))
           rescue ResponseError => e
-            return Response.new(false, 'Invalid Login') if(e.response.code == '401')
+            return Response.new(false, 'Invalid Login') if e.response.code == '401'
+
             parse(e.response.body)
           end
 
@@ -158,8 +160,8 @@ module ActiveMerchant #:nodoc:
           success,
           message_from(response),
           response,
-          :test => response['test'],
-          :authorization => authorization_from(response, success, uri)
+          test: response['test'],
+          authorization: authorization_from(response, success, uri)
         )
       end
 

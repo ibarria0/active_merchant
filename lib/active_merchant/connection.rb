@@ -62,6 +62,7 @@ module ActiveMerchant
 
     def wiredump_device=(device)
       raise ArgumentError, "can't wiredump to frozen #{device.class}" if device&.frozen?
+
       @wiredump_device = device
     end
 
@@ -71,7 +72,7 @@ module ActiveMerchant
       headers = headers.dup
       headers['connection'] ||= 'close'
 
-      retry_exceptions(:max_retries => max_retries, :logger => logger, :tag => tag) do
+      retry_exceptions(max_retries: max_retries, logger: logger, tag: tag) do
         begin
           info "connection_http_method=#{method.to_s.upcase} connection_uri=#{endpoint}", tag
 
@@ -86,6 +87,7 @@ module ActiveMerchant
               case method
               when :get
                 raise ArgumentError, 'GET requests do not support a request body' if body
+
                 http.get(endpoint.request_uri, headers)
               when :post
                 debug body

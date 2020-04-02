@@ -137,6 +137,7 @@ module ActiveMerchant #:nodoc:
 
       def add_shipping_address(post, options)
         return unless options[:shipping_address]
+
         address = options[:shipping_address]
 
         post[:shipping_address] = {}
@@ -258,7 +259,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def transaction_id_from(authorization)
-        transaction_id, _, original_auth_transaction_id, _= split_authorization(authorization)
+        transaction_id, _, original_auth_transaction_id, _ = split_authorization(authorization)
         original_auth_transaction_id.present? ? original_auth_transaction_id : transaction_id
       end
     end

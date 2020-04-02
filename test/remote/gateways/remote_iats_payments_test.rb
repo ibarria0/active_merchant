@@ -9,9 +9,9 @@ class IatsPaymentsTest < Test::Unit::TestCase
     @credit_card = credit_card('4222222222222220')
     @check = check(routing_number: '111111111', account_number: '12345678')
     @options = {
-      :order_id => generate_unique_id,
-      :billing_address => address,
-      :description => 'Store purchase'
+      order_id: generate_unique_id,
+      billing_address: address,
+      description: 'Store purchase'
     }
   end
 
@@ -104,9 +104,9 @@ class IatsPaymentsTest < Test::Unit::TestCase
 
   def test_invalid_login
     gateway = IatsPaymentsGateway.new(
-      :agent_code => 'X',
-      :password => 'Y',
-      :region => 'na'
+      agent_code: 'X',
+      password: 'Y',
+      region: 'na'
     )
 
     assert response = gateway.purchase(@amount, @credit_card)
@@ -136,5 +136,4 @@ class IatsPaymentsTest < Test::Unit::TestCase
     assert_scrubbed(@gateway.options[:agent_code], transcript)
     assert_scrubbed(@gateway.options[:password], transcript)
   end
-
 end

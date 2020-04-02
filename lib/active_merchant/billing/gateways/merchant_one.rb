@@ -3,7 +3,6 @@ require 'cgi'
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class MerchantOneGateway < Gateway
-
       class MerchantOneSslConnection < ActiveMerchant::Connection
         def configure_ssl(http)
           super(http)
@@ -102,8 +101,8 @@ module ActiveMerchant #:nodoc:
           (responses['response'].to_i == 1),
           responses['responsetext'],
           responses,
-          :test => test?,
-          :authorization => responses['transactionid']
+          test: test?,
+          authorization: responses['transactionid']
         )
       end
     end

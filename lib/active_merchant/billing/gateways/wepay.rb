@@ -81,7 +81,7 @@ module ActiveMerchant #:nodoc:
         post[:expiration_month] = creditcard.month
         post[:expiration_year] = creditcard.year
 
-        if(billing_address = (options[:billing_address] || options[:address]))
+        if (billing_address = (options[:billing_address] || options[:address]))
           post[:address] = {}
           post[:address]['address1'] = billing_address[:address1] if billing_address[:address1]
           post[:address]['city']     = billing_address[:city] if billing_address[:city]
@@ -170,11 +170,12 @@ module ActiveMerchant #:nodoc:
 
       def commit(action, params, options={})
         begin
-          response = parse(ssl_post(
-            ((test? ? test_url : live_url) + action),
-            params.to_json,
-            headers(options)
-          ))
+          response = parse(
+            ssl_post(
+              ((test? ? test_url : live_url) + action),
+              params.to_json,
+              headers(options)
+            ))
         rescue ResponseError => e
           response = parse(e.response.body)
         end
