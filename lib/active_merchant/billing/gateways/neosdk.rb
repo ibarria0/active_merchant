@@ -3,7 +3,7 @@ module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class NeosdkGateway < Gateway
       include NeoSDK
-      self.test_url = 'https://gateway.merchantprocess.net/v1/api/'
+      self.test_url = 'http://tokenv2.test.merchantprocess.net/tokenwebservice.asmx'
       self.live_url = 'https://gateway12.merchantprocess.net/sdk/api/'
 
       self.money_format = :dollars
