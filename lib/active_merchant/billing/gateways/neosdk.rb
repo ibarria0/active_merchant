@@ -4,12 +4,12 @@ module ActiveMerchant #:nodoc:
     class NeosdkGateway < Gateway
       include NeoSDK
       self.test_url = 'http://securegateway.merchantprocess.net/NeogatewayApi_Test/api/'
-      self.live_url = 'https://gateway12.merchantprocess.net/sdk/api/'
+      self.live_url = 'https://gateway.merchantprocess.net/api/prod-v1.0/api/'
 
       self.money_format = :dollars
       self.supported_countries = ['PA']
       self.default_currency = 'USD'
-      self.supported_cardtypes = [:visa, :master, :american_express, :discover]
+      self.supported_cardtypes = [:visa, :master]
 
       self.homepage_url = 'http://www.example.net/'
       self.display_name = 'Neo Gateway'
