@@ -1,17 +1,11 @@
-module ActiveMerchant #:nodoc:
-  module Billing #:nodoc:
+module ActiveMerchant # :nodoc:
+  module Billing # :nodoc:
     # This module is included in both PaypalGateway and PaypalExpressGateway
     module PaypalCommonAPI
       include Empty
 
       API_VERSION = '124'
-
-      URLS = {
-        :test => { :certificate => 'https://api.sandbox.paypal.com/2.0/',
-                   :signature   => 'https://api-3t.sandbox.paypal.com/2.0/' },
-        :live => { :certificate => 'https://api.paypal.com/2.0/',
-                   :signature   => 'https://api-3t.paypal.com/2.0/' }
-      }
+      API_VERSION_3DS2 = '214.0'
 
       PAYPAL_NAMESPACE = 'urn:ebay:api:PayPalAPI'
       EBAY_NAMESPACE = 'urn:ebay:apis:eBLBaseComponents'
@@ -58,8 +52,6 @@ module ActiveMerchant #:nodoc:
         base.default_currency = 'USD'
         base.cattr_accessor :pem_file
         base.cattr_accessor :signature
-        base.live_url = URLS[:live][:signature]
-        base.test_url = URLS[:test][:signature]
       end
 
       # The gateway must be configured with either your PayPal PEM file
@@ -93,6 +85,15 @@ module ActiveMerchant #:nodoc:
         end
 
         super(options)
+      end
+
+      def urls
+        {
+          :test => { :certificate => "https://api.sandbox.paypal.com/#{fetch_version}/",
+                    :signature   => "https://api-3t.sandbox.paypal.com/#{fetch_version}/" },
+          :live => { :certificate => "https://api.paypal.com/#{fetch_version}/",
+                    :signature   => "https://api-3t.paypal.com/#{fetch_version}/" }
+        }
       end
 
       def reauthorize(money, authorization, options = {})
@@ -178,6 +179,11 @@ module ActiveMerchant #:nodoc:
       #     . (period)
       #     {space}
       #
+
+      def inquire(authorization, options = {})
+        transaction_details(authorization)
+      end
+
       def reference_transaction(money, options = {})
         requires!(options, :reference_id)
         commit 'DoReferenceTransaction', build_reference_transaction_request(money, options)
@@ -269,7 +275,21 @@ module ActiveMerchant #:nodoc:
         commit 'ManagePendingTransactionStatus', build_manage_pending_transaction_status(transaction_id, action)
       end
 
+      def supports_scrubbing?
+        true
+      end
+
+      def scrub(transcript)
+        transcript.
+          gsub(%r((<n1:Password>).+(</n1:Password>)), '\1[FILTERED]\2').
+          gsub(%r((<n1:Username>).+(</n1:Username>)), '\1[FILTERED]\2').
+          gsub(%r((<n1:Signature>).+(</n1:Signature>)), '\1[FILTERED]\2').
+          gsub(%r((<n2:CreditCardNumber>).+(</n2:CreditCardNumber)), '\1[FILTERED]\2').
+          gsub(%r((<n2:CVV2>)\d+(</n2:CVV2)), '\1[FILTERED]\2')
+      end
+
       private
+
       def build_request_wrapper(action, options = {})
         xml = Builder::XmlMarkup.new :indent => 2
         xml.tag! action + 'Req', 'xmlns' => PAYPAL_NAMESPACE do
@@ -572,7 +592,7 @@ module ActiveMerchant #:nodoc:
           xml.tag! 'n2:OrderTotal', localized_amount(money, currency_code), 'currencyID' => currency_code
 
           # All of the values must be included together and add up to the order total
-          if [:subtotal, :shipping, :handling, :tax].all?{ |o| options.has_key?(o) }
+          if [:subtotal, :shipping, :handling, :tax].all?{ |o| options[o].present? }
             xml.tag! 'n2:ItemTotal', localized_amount(options[:subtotal], currency_code), 'currencyID' => currency_code
             xml.tag! 'n2:ShippingTotal', localized_amount(options[:shipping], currency_code),'currencyID' => currency_code
             xml.tag! 'n2:HandlingTotal', localized_amount(options[:handling], currency_code),'currencyID' => currency_code
@@ -641,7 +661,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def endpoint_url
-        URLS[test? ? :test : :live][@options[:signature].blank? ? :certificate : :signature]
+        urls[test? ? :test : :live][@options[:signature].blank? ? :certificate : :signature]
       end
 
       def commit(action, request)

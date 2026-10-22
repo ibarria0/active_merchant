@@ -5,17 +5,54 @@ class RemotePinTest < Test::Unit::TestCase
     @gateway = PinGateway.new(fixtures(:pin))
 
     @amount = 100
-    @credit_card = credit_card('5520000000000000', :year => Time.now.year + 2)
-    @visa_credit_card = credit_card('4200000000000000', :year => Time.now.year + 3)
+    @credit_card = credit_card('5520000000000000', year: Time.now.year + 2)
+    @visa_credit_card = credit_card('4200000000000000', year: Time.now.year + 3)
     @declined_card = credit_card('4100000000000001')
 
+    @apple_pay_card = network_tokenization_credit_card(
+      '4200000000000000',
+      month: 12,
+      year: Time.now.year + 2,
+      source: :apple_pay,
+      eci: '05',
+      brand: 'visa',
+      payment_cryptogram: 'AABBCCDDEEFFGGHH'
+    )
+
+    @google_pay_card = network_tokenization_credit_card(
+      '4200000000000000',
+      month: 12,
+      year: Time.now.year + 2,
+      source: :google_pay,
+      eci: '05',
+      brand: 'visa',
+      payment_cryptogram: 'AABBCCDDEEFFGGHH'
+    )
+
     @options = {
-      :email => 'roland@pin.net.au',
-      :ip => '203.59.39.62',
-      :order_id => '1',
-      :billing_address => address,
-      :description => "Store Purchase #{DateTime.now.to_i}"
+      email: 'roland@pinpayments.com',
+      ip: '203.59.39.62',
+      order_id: '1',
+      billing_address: address,
+      description: "Store Purchase #{DateTime.now.to_i}"
     }
+
+    @additional_options_3ds_passthrough = @options.merge(
+      three_d_secure: {
+        version: '1.0.2',
+        eci: '06',
+        cavv: 'AgAAAAAAAIR8CQrXcIhbQAAAAAA',
+        xid: 'MDAwMDAwMDAwMDAwMDAwMzIyNzY='
+      }
+    )
+
+    @additional_options_3ds = @options.merge(
+      three_d_secure: {
+        enabled: true,
+        fallback_ok: true,
+        callback_url: 'https://yoursite.com/authentication_complete'
+      }
+    )
   end
 
   def test_successful_purchase
@@ -38,8 +75,47 @@ class RemotePinTest < Test::Unit::TestCase
     assert_equal options_with_metadata[:metadata][:purchase_number], response.params['response']['metadata']['purchase_number']
   end
 
+  def test_successful_purchase_with_platform_adjustment
+    options_with_platform_adjustment = {
+      platform_adjustment: {
+        amount: 30,
+        currency: 'AUD'
+      }
+    }
+    response = @gateway.purchase(@amount, @credit_card, @options.merge(options_with_platform_adjustment))
+    assert_success response
+    assert_equal true, response.params['response']['captured']
+    assert_equal options_with_platform_adjustment[:platform_adjustment][:amount], response.params['response']['platform_adjustment']['amount']
+    assert_equal options_with_platform_adjustment[:platform_adjustment][:currency], response.params['response']['platform_adjustment']['currency']
+  end
+
+  def test_successful_purchase_with_reference
+    response = @gateway.purchase(@amount, @credit_card, @options.merge(reference: 'statement descriptor'))
+    assert_success response
+  end
+
   def test_successful_authorize_and_capture
     authorization = @gateway.authorize(@amount, @credit_card, @options)
+    assert_success authorization
+    assert_equal false, authorization.params['response']['captured']
+
+    response = @gateway.capture(@amount, authorization.authorization, @options)
+    assert_success response
+    assert_equal true, response.params['response']['captured']
+  end
+
+  def test_successful_authorize_and_capture_with_passthrough_3ds
+    authorization = @gateway.authorize(@amount, @credit_card, @additional_options_3ds_passthrough)
+    assert_success authorization
+    assert_equal false, authorization.params['response']['captured']
+
+    response = @gateway.capture(@amount, authorization.authorization, @options)
+    assert_success response
+    assert_equal true, response.params['response']['captured']
+  end
+
+  def test_successful_authorize_and_capture_with_3ds
+    authorization = @gateway.authorize(@amount, @credit_card, @additional_options_3ds)
     assert_success authorization
     assert_equal false, authorization.params['response']['captured']
 
@@ -54,7 +130,7 @@ class RemotePinTest < Test::Unit::TestCase
   end
 
   def test_failed_capture_due_to_invalid_token
-    response = @gateway.capture(@amount, "bogus", @options)
+    response = @gateway.capture(@amount, 'bogus', @options)
     assert_failure response
   end
 
@@ -74,6 +150,18 @@ class RemotePinTest < Test::Unit::TestCase
     assert_success response
   end
 
+  def test_successful_purchase_with_apple_pay
+    response = @gateway.purchase(@amount, @apple_pay_card, @options)
+    assert_success response
+    assert_equal true, response.params['response']['captured']
+  end
+
+  def test_successful_purchase_with_google_pay
+    response = @gateway.purchase(@amount, @google_pay_card, @options)
+    assert_success response
+    assert_equal true, response.params['response']['captured']
+  end
+
   def test_unsuccessful_purchase
     response = @gateway.purchase(@amount, @declined_card, @options)
     assert_failure response
@@ -84,27 +172,27 @@ class RemotePinTest < Test::Unit::TestCase
   # falls outside of active merchant
   def test_store_and_charge_with_pinjs_card_token
     headers = {
-      "Content-Type" => "application/json",
-      "Authorization" => "Basic #{Base64.strict_encode64(@gateway.options[:api_key] + ':').strip}"
+      'Content-Type' => 'application/json',
+      'Authorization' => "Basic #{Base64.strict_encode64(@gateway.options[:api_key] + ':').strip}"
     }
     # Get a token equivalent to what is returned by Pin.js
     card_attrs = {
-      :number => @credit_card.number,
-      :expiry_month => @credit_card.month,
-      :expiry_year => @credit_card.year,
-      :cvc => @credit_card.verification_value,
-      :name => "#{@credit_card.first_name} #{@credit_card.last_name}",
-      :address_line1 => "42 Sevenoaks St",
-      :address_city => "Lathlain",
-      :address_postcode => "6454",
-      :address_start => "WA",
-      :address_country => "Australia"
+      number: @credit_card.number,
+      expiry_month: @credit_card.month,
+      expiry_year: @credit_card.year,
+      cvc: @credit_card.verification_value,
+      name: "#{@credit_card.first_name} #{@credit_card.last_name}",
+      address_line1: '42 Sevenoaks St',
+      address_city: 'Lathlain',
+      address_postcode: '6454',
+      address_start: 'WA',
+      address_country: 'Australia'
     }
-    url = @gateway.test_url + "/cards"
+    url = @gateway.test_url + '/cards'
 
     body = JSON.parse(@gateway.ssl_post(url, card_attrs.to_json, headers))
 
-    card_token = body["response"]["token"]
+    card_token = body['response']['token']
 
     store = @gateway.store(card_token, @options)
     assert_success store
@@ -136,10 +224,19 @@ class RemotePinTest < Test::Unit::TestCase
     assert_not_nil response.authorization
     assert_equal @credit_card.year, response.params['response']['card']['expiry_year']
 
-    response = @gateway.update(response.authorization, @visa_credit_card, :address => address)
+    response = @gateway.update(response.authorization, @visa_credit_card, address:)
     assert_success response
     assert_not_nil response.authorization
     assert_equal @visa_credit_card.year, response.params['response']['card']['expiry_year']
+  end
+
+  def test_store_and_unstore
+    response = @gateway.store(@credit_card, @options)
+    assert_success response
+    assert_not_nil response.authorization
+
+    response = @gateway.unstore(response.authorization)
+    assert_success response
   end
 
   def test_refund
@@ -165,8 +262,128 @@ class RemotePinTest < Test::Unit::TestCase
     assert_failure response
   end
 
+  def test_successful_void
+    authorization = @gateway.authorize(@amount, @credit_card, @options)
+    assert_success authorization
+
+    assert void = @gateway.void(authorization.authorization, @options)
+    assert_success void
+  end
+
+  def test_failed_void
+    authorization = @gateway.authorize(@amount, @credit_card, @options)
+    assert_success authorization
+
+    assert void = @gateway.void(authorization.authorization, @options)
+    assert_success void
+
+    assert already_voided = @gateway.void(authorization.authorization, @options)
+    assert_failure already_voided
+  end
+
+  def test_successful_inquire
+    authorization = @gateway.authorize(@amount, @credit_card, @options)
+    assert_success authorization
+
+    assert inquire = @gateway.inquire(authorization.authorization, @options)
+    assert_success inquire
+  end
+
+  def test_successful_transaction_search
+    response = @gateway.transaction_search
+    assert_success response
+    assert response.params['response'].is_a?(Array)
+    assert response.params.key?('pagination')
+  end
+
+  def test_transaction_search_with_query
+    response = @gateway.transaction_search(query: @options[:email])
+    assert_success response
+    assert response.params['response'].is_a?(Array)
+  end
+
+  def test_transaction_search_with_date_range
+    today = Date.today
+    start_date = (today - 30).strftime('%Y-%m-%d')
+    end_date = today.strftime('%Y-%m-%d')
+
+    response = @gateway.transaction_search(start_date:, end_date:)
+    assert_success response
+    assert response.params['response'].is_a?(Array)
+
+    # Verify all returned transactions are within the date range
+    response.params['response'].each do |charge|
+      charge_date = Date.parse(charge['created_at'])
+      assert charge_date >= Date.parse(start_date), 'Charge date should be on or after start date'
+      assert charge_date <= Date.parse(end_date), 'Charge date should be on or before end date'
+    end
+  end
+
+  def test_transaction_search_with_pagination
+    response = @gateway.transaction_search(page: 1)
+    assert_success response
+    assert_equal 1, response.params['pagination']['current']
+    assert response.params['pagination'].key?('per_page')
+    assert response.params['pagination'].key?('count')
+  end
+
+  def test_transaction_search_with_sort_ascending
+    response = @gateway.transaction_search(sort: 'created_at', direction: 1)
+    assert_success response
+
+    if response.params['response'].length > 1
+      # Verify ascending order
+      dates = response.params['response'].map { |charge| Time.parse(charge['created_at']) }
+      assert_equal dates, dates.sort, 'Results should be sorted in ascending order by created_at'
+    end
+  end
+
+  def test_transaction_search_with_sort_descending
+    response = @gateway.transaction_search(sort: 'created_at', direction: -1)
+    assert_success response
+
+    if response.params['response'].length > 1
+      # Verify descending order
+      dates = response.params['response'].map { |charge| Time.parse(charge['created_at']) }
+      assert_equal dates, dates.sort.reverse, 'Results should be sorted in descending order by created_at'
+    end
+  end
+
+  def test_transaction_search_with_amount_sort
+    response = @gateway.transaction_search(sort: 'amount', direction: -1)
+    assert_success response
+
+    if response.params['response'].length > 1
+      # Verify descending order by amount
+      amounts = response.params['response'].map { |charge| charge['amount'] }
+      assert_equal amounts, amounts.sort.reverse, 'Results should be sorted in descending order by amount'
+    end
+  end
+
+  def test_transaction_search_with_multiple_filters
+    today = Date.today
+    start_date = (today - 7).strftime('%Y/%m/%d')
+
+    response = @gateway.transaction_search(
+      query: @options[:email],
+      start_date:,
+      sort: 'created_at',
+      direction: -1
+    )
+
+    assert_success response
+    assert response.params['response'].is_a?(Array)
+  end
+
+  def test_transaction_search_empty_results
+    # Search with a very specific query that shouldn't match anything
+    response = @gateway.transaction_search(query: 'nonexistent-email-xyz@test.invalid')
+    assert_success response
+    assert_equal 0, response.params['response'].length
+  end
+
   def test_invalid_login
-    gateway = PinGateway.new(:api_key => '')
+    gateway = PinGateway.new(api_key: '')
     response = gateway.purchase(@amount, @credit_card, @options)
     assert_failure response
   end
@@ -179,5 +396,16 @@ class RemotePinTest < Test::Unit::TestCase
 
     assert_scrubbed(@credit_card.number, clean_transcript)
     assert_scrubbed(@credit_card.verification_value.to_s, clean_transcript)
+  end
+
+  def test_transcript_scrubbing_with_apple_pay
+    transcript = capture_transcript(@gateway) do
+      @gateway.purchase(@amount, @apple_pay_card, @options)
+    end
+    clean_transcript = @gateway.scrub(transcript)
+
+    assert_scrubbed(@apple_pay_card.number, clean_transcript)
+    assert_scrubbed(@apple_pay_card.verification_value.to_s, clean_transcript)
+    assert_scrubbed(@apple_pay_card.payment_cryptogram, clean_transcript)
   end
 end

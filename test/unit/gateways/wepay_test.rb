@@ -1,6 +1,8 @@
 require 'test_helper'
 
 class WepayTest < Test::Unit::TestCase
+  include CommStub
+
   def setup
     @gateway = WepayGateway.new(
       client_id: 'client_id',
@@ -12,8 +14,12 @@ class WepayTest < Test::Unit::TestCase
     @amount = 20000
 
     @options = {
-      email: "test@example.com"
+      email: 'test@example.com'
     }
+  end
+
+  def test_api_version
+    assert_equal 'v2', @gateway.fetch_version
   end
 
   def test_successful_purchase
@@ -22,7 +28,7 @@ class WepayTest < Test::Unit::TestCase
     response = @gateway.purchase(@amount, @credit_card, @options)
     assert_success response
 
-    assert_equal "1181910285|20.00", response.authorization
+    assert_equal '1181910285|20.00', response.authorization
   end
 
   def test_failed_purchase
@@ -35,16 +41,16 @@ class WepayTest < Test::Unit::TestCase
   def test_successful_purchase_with_token
     @gateway.expects(:ssl_post).at_most(2).returns(successful_capture_response)
 
-    response = @gateway.purchase(@amount, "1422891921", @options)
+    response = @gateway.purchase(@amount, '1422891921', @options)
     assert_success response
 
-    assert_equal "1181910285|20.00", response.authorization
+    assert_equal '1181910285|20.00', response.authorization
   end
 
   def test_failed_purchase_with_token
     @gateway.expects(:ssl_post).at_most(2).returns(failed_capture_response)
 
-    response = @gateway.purchase(@amount, "1422891921", @options)
+    response = @gateway.purchase(@amount, '1422891921', @options)
     assert_failure response
   end
 
@@ -60,7 +66,7 @@ class WepayTest < Test::Unit::TestCase
 
     response = @gateway.refund(@amount, @credit_card, @options)
     assert_failure response
-    assert_equal "refund_reason parameter is required", response.message
+    assert_equal 'refund_reason parameter is required', response.message
   end
 
   def test_successful_authorize
@@ -75,35 +81,35 @@ class WepayTest < Test::Unit::TestCase
 
     response = @gateway.authorize(@amount, @credit_card, @options)
     assert_failure response
-    assert_equal "Invalid credit card number", response.message
+    assert_equal 'Invalid credit card number', response.message
   end
 
   def test_successful_authorize_with_token
     @gateway.expects(:ssl_post).at_most(2).returns(successful_authorize_response)
 
-    response = @gateway.authorize(@amount, "1422891921", @options)
+    response = @gateway.authorize(@amount, '1422891921', @options)
     assert_success response
   end
 
   def test_failed_authorize_with_token
     @gateway.expects(:ssl_post).at_most(2).returns(failed_authorize_response)
 
-    response = @gateway.authorize(@amount, "1422891921", @options)
+    response = @gateway.authorize(@amount, '1422891921', @options)
     assert_failure response
-    assert_equal "Invalid credit card number", response.message
+    assert_equal 'Invalid credit card number', response.message
   end
 
   def test_successful_capture
     @gateway.expects(:ssl_post).at_most(2).returns(successful_capture_response)
 
-    response = @gateway.capture(@amount, "auth|amount", @options)
+    response = @gateway.capture(@amount, 'auth|amount', @options)
     assert_success response
   end
 
   def test_failed_capture
     @gateway.expects(:ssl_post).at_most(3).returns(failed_capture_response)
 
-    response = @gateway.capture(@amount, "auth|200.00", @options)
+    response = @gateway.capture(@amount, 'auth|200.00', @options)
     assert_failure response
     assert_equal "Checkout object must be in state 'Reserved' to capture. Currently it is in state captured", response.message
   end
@@ -111,24 +117,32 @@ class WepayTest < Test::Unit::TestCase
   def test_successful_void
     @gateway.expects(:ssl_post).returns(successful_void_response)
 
-    response = @gateway.void("auth|amount", @options)
+    response = @gateway.void('auth|amount', @options)
     assert_success response
   end
 
   def test_failed_void
     @gateway.expects(:ssl_post).returns(failed_void_response)
 
-    response = @gateway.void("auth|amount", @options)
+    response = @gateway.void('auth|amount', @options)
     assert_failure response
-    assert_equal "this checkout has already been cancelled", response.message
+    assert_equal 'this checkout has already been cancelled', response.message
   end
 
-  def test_successful_store
+  def test_successful_store_via_create
     @gateway.expects(:ssl_post).returns(successful_store_response)
 
     response = @gateway.store(@credit_card, @options)
     assert_success response
-    assert_equal "3322208138", response.authorization
+    assert_equal '3322208138', response.authorization
+  end
+
+  def test_successful_store_via_transfer
+    @gateway.expects(:ssl_post).returns(successful_store_response)
+
+    response = @gateway.store(@credit_card, @options.merge(recurring: true))
+    assert_success response
+    assert_equal '3322208138', response.authorization
   end
 
   def test_failed_store
@@ -136,7 +150,7 @@ class WepayTest < Test::Unit::TestCase
 
     response = @gateway.store(@credit_card, @options)
     assert_failure response
-    assert_equal "Invalid credit card number", response.message
+    assert_equal 'Invalid credit card number', response.message
   end
 
   def test_invalid_json_response
@@ -147,9 +161,30 @@ class WepayTest < Test::Unit::TestCase
     assert_match(/Invalid JSON response received from WePay/, response.message)
   end
 
+  def test_no_version_by_default
+    stub_comms do
+      @gateway.purchase(@amount, @credit_card, @options)
+    end.check_request do |_endpoint, _data, headers|
+      assert_no_match(/Api-Version/, headers.to_s)
+    end.respond_with(successful_authorize_response)
+  end
+
+  def test_version_override
+    stub_comms do
+      @gateway.purchase(@amount, @credit_card, @options.merge(version: '2017-05-31'))
+    end.check_request do |_endpoint, _data, headers|
+      assert_match(/"Api-Version\"=>\"2017-05-31\"/, headers.to_s)
+    end.respond_with(successful_authorize_response)
+  end
+
   def test_scrub
     assert @gateway.supports_scrubbing?
     assert_equal @gateway.scrub(pre_scrubbed), post_scrubbed
+  end
+
+  def test_url
+    assert_equal 'https://wepayapi.com/v2', @gateway.live_url
+    assert_equal 'https://stage.wepayapi.com/v2', @gateway.test_url
   end
 
   private
@@ -399,5 +434,4 @@ class WepayTest < Test::Unit::TestCase
   def invalid_json_response
     %({"checkout_id"=1852898602,"state":"captured")
   end
-
 end

@@ -1,12 +1,17 @@
-module ActiveMerchant #:nodoc:
-  module PostsData  #:nodoc:
-
+module ActiveMerchant # :nodoc:
+  module PostsData # :nodoc:
     def self.included(base)
       base.class_attribute :ssl_strict
       base.ssl_strict = true
 
       base.class_attribute :ssl_version
       base.ssl_version = nil
+
+      base.class_attribute :min_version
+      base.min_version = Connection::MIN_VERSION
+
+      base.class_attribute :max_version
+      base.max_version = nil
 
       base.class_attribute :retry_safe
       base.retry_safe = false
@@ -25,9 +30,11 @@ module ActiveMerchant #:nodoc:
 
       base.class_attribute :proxy_address
       base.class_attribute :proxy_port
+      base.class_attribute :proxy_user
+      base.class_attribute :proxy_password
     end
 
-    def ssl_get(endpoint, headers={})
+    def ssl_get(endpoint, headers = {})
       ssl_request(:get, endpoint, nil, headers)
     end
 
@@ -40,8 +47,8 @@ module ActiveMerchant #:nodoc:
     end
 
     def raw_ssl_request(method, endpoint, data, headers = {})
-      logger.warn "#{self.class} using ssl_strict=false, which is insecure" if logger unless ssl_strict
-      logger.warn "#{self.class} posting to plaintext endpoint, which is insecure" if logger unless endpoint.to_s =~ /^https:/
+      logger&.warn "#{self.class} using ssl_strict=false, which is insecure" unless ssl_strict
+      logger&.warn "#{self.class} posting to plaintext endpoint, which is insecure" unless endpoint.to_s =~ /^https:/
 
       connection = new_connection(endpoint)
       connection.open_timeout = open_timeout
@@ -53,14 +60,20 @@ module ActiveMerchant #:nodoc:
       connection.max_retries  = max_retries
       connection.tag          = self.class.name
       connection.wiredump_device = wiredump_device
+      if connection.respond_to?(:min_version=)
+        connection.min_version = min_version
+        connection.max_version = max_version
+      end
 
       connection.pem          = @options[:pem] if @options
       connection.pem_password = @options[:pem_password] if @options
 
       connection.ignore_http_status = @options[:ignore_http_status] if @options
 
-      connection.proxy_address = proxy_address
-      connection.proxy_port    = proxy_port
+      connection.proxy_address  = proxy_address
+      connection.proxy_port     = proxy_port
+      connection.proxy_user     = proxy_user
+      connection.proxy_password = proxy_password
 
       connection.request(method, data, headers)
     end
@@ -80,5 +93,15 @@ module ActiveMerchant #:nodoc:
       end
     end
 
+    # This class is needed to play along with the Refinement done for Net::HTTP
+    # class so it can have a way to detect if the hash that represent the headers
+    # should use the case sensitive version of the headers or not.
+    class CaseSensitiveHeaders < Hash
+      def dup
+        case_sensitive_dup = self.class.new
+        each { |key, value| case_sensitive_dup[key] = value }
+        case_sensitive_dup
+      end
+    end
   end
 end

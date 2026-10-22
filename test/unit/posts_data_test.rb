@@ -1,12 +1,11 @@
 require 'test_helper'
 
 class PostsDataTests < Test::Unit::TestCase
-
   def setup
     @url = 'http://example.com'
     @gateway = SimpleTestGateway.new
-    @ok = stub(:body => '', :code => '200', :message => 'OK')
-    @error = stub(:code => 500, :message => 'Internal Server Error', :body => 'failure')
+    @ok = stub(body: '', code: '200', message: 'OK')
+    @error = stub(code: 500, message: 'Internal Server Error', body: 'failure')
   end
 
   def teardown
@@ -42,6 +41,14 @@ class PostsDataTests < Test::Unit::TestCase
     assert_equal @ok, @gateway.raw_ssl_request(:post, @url, '')
   end
 
+  def test_raw_ssl_request_does_not_mutate_headers_argument
+    ActiveMerchant::Connection.any_instance.expects(:request).returns(@ok)
+
+    headers = { 'Content-Type' => 'text/xml' }.freeze
+    @gateway.raw_ssl_request(:post, @url, '', headers)
+    assert_equal({ 'Content-Type' => 'text/xml' }, headers)
+  end
+
   def test_setting_ssl_strict_outside_class_definition
     assert_equal SimpleTestGateway.ssl_strict, SubclassGateway.ssl_strict
     SimpleTestGateway.ssl_strict = !SimpleTestGateway.ssl_strict
@@ -63,9 +70,13 @@ class PostsDataTests < Test::Unit::TestCase
   def test_setting_proxy_settings
     @gateway.class.proxy_address = 'http://proxy.com'
     @gateway.class.proxy_port = 1234
+    @gateway.class.proxy_user = 'user'
+    @gateway.class.proxy_password = 'password'
     ActiveMerchant::Connection.any_instance.expects(:request).returns(@ok)
     ActiveMerchant::Connection.any_instance.expects(:proxy_address=).with('http://proxy.com')
     ActiveMerchant::Connection.any_instance.expects(:proxy_port=).with(1234)
+    ActiveMerchant::Connection.any_instance.expects(:proxy_user=).with('user')
+    ActiveMerchant::Connection.any_instance.expects(:proxy_password=).with('password')
 
     assert_nothing_raised do
       @gateway.ssl_post(@url, '')

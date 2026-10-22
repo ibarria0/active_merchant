@@ -12,101 +12,221 @@ class RemoteSagePayTest < Test::Unit::TestCase
     @gateway = SagePayGateway.new(fixtures(:sage_pay))
 
     @amex = CreditCard.new(
-      :number => '374200000000004',
-      :month => 12,
-      :year => next_year,
-      :verification_value => 4887,
-      :first_name => 'Tekin',
-      :last_name => 'Suleyman',
-      :brand => 'american_express'
+      number: '374200000000004',
+      month: 12,
+      year: next_year,
+      verification_value: 4887,
+      first_name: 'Tekin',
+      last_name: 'Suleyman',
+      brand: 'american_express'
     )
 
     @maestro = CreditCard.new(
-      :number => '5641820000000005',
-      :month => 12,
-      :year => next_year,
-      :issue_number => '01',
-      :start_month => 12,
-      :start_year => next_year - 2,
-      :verification_value => 123,
-      :first_name => 'Tekin',
-      :last_name => 'Suleyman',
-      :brand => 'maestro'
+      number: '5641820000000005',
+      month: 12,
+      year: next_year,
+      start_month: 12,
+      start_year: next_year - 2,
+      verification_value: 123,
+      first_name: 'Tekin',
+      last_name: 'Suleyman',
+      brand: 'maestro'
     )
 
     @visa = CreditCard.new(
-      :number => '4929000000006',
-      :month => 6,
-      :year => next_year,
-      :verification_value => 123,
-      :first_name => 'Tekin',
-      :last_name => 'Suleyman',
-      :brand => 'visa'
+      number: '4929000000006',
+      month: 6,
+      year: next_year,
+      verification_value: 123,
+      first_name: 'Tekin',
+      last_name: 'Suleyman',
+      brand: 'visa'
     )
 
     @mastercard = CreditCard.new(
-      :number => '5404000000000001',
-      :month => 12,
-      :year => next_year,
-      :verification_value => 419,
-      :first_name => 'Tekin',
-      :last_name => 'Suleyman',
-      :brand => 'master'
+      number: '5186150660000009',
+      month: 12,
+      year: next_year,
+      verification_value: 419,
+      first_name: 'Tekin',
+      last_name: 'Suleyman',
+      brand: 'master'
+    )
+
+    @frictionless = CreditCard.new(
+      number: '5186150660000009',
+      month: 12,
+      year: next_year,
+      verification_value: 419,
+      first_name: 'SUCCESSFUL',
+      last_name: '',
+      brand: 'master'
     )
 
     @electron = CreditCard.new(
-      :number => '4917300000000008',
-      :month => 12,
-      :year => next_year,
-      :verification_value => 123,
-      :first_name => 'Tekin',
-      :last_name => 'Suleyman',
-      :brand => 'electron'
+      number: '4917300000000008',
+      month: 12,
+      year: next_year,
+      verification_value: 123,
+      first_name: 'Tekin',
+      last_name: 'Suleyman',
+      brand: 'electron'
     )
 
     @declined_card = CreditCard.new(
-      :number => '4111111111111111',
-      :month => 9,
-      :year => next_year,
-      :first_name => 'Tekin',
-      :last_name => 'Suleyman',
-      :brand => 'visa'
+      number: '4000000000000001',
+      month: 9,
+      year: next_year,
+      verification_value: 123,
+      first_name: 'Tekin',
+      last_name: 'Suleyman',
+      brand: 'visa'
     )
 
     @options = {
-      :billing_address => {
-        :name => 'Tekin Suleyman',
-        :address1 => 'Flat 10 Lapwing Court',
-        :address2 => 'West Didsbury',
-        :city => "Manchester",
-        :county => 'Greater Manchester',
-        :country => 'GB',
-        :zip => 'M20 2PS'
+      billing_address: {
+        name: 'Tekin Suleyman',
+        address1: 'Flat 10 Lapwing Court',
+        address2: 'West Didsbury',
+        city: 'Manchester',
+        county: 'Greater Manchester',
+        country: 'GB',
+        zip: 'M20 2PS'
       },
-      :shipping_address => {
-        :name => 'Tekin Suleyman',
-        :address1 => '120 Grosvenor St',
-        :city => "Manchester",
-        :county => 'Greater Manchester',
-        :country => 'GB',
-        :zip => 'M1 7QW'
+      shipping_address: {
+        name: 'Tekin Suleyman',
+        address1: '120 Grosvenor St',
+        city: 'Manchester',
+        county: 'Greater Manchester',
+        country: 'GB',
+        zip: 'M1 7QW'
       },
-      :order_id => generate_unique_id,
-      :description => 'Store purchase',
-      :ip => '86.150.65.37',
-      :email => 'tekin@tekin.co.uk',
-      :phone => '0161 123 4567'
+      order_id: generate_unique_id,
+      description: 'Store purchase',
+      ip: '86.150.65.37',
+      email: 'tekin@tekin.co.uk',
+      phone: '0161 123 4567'
+    }
+
+    @options_v4 = {
+      billing_address: {
+        name: 'Tekin Suleyman',
+        address1: 'Flat 10 Lapwing Court',
+        address2: 'West Didsbury',
+        city: 'Manchester',
+        county: 'Greater Manchester',
+        country: 'GB',
+        zip: 'M20 2PS'
+      },
+      shipping_address: {
+        name: 'Tekin Suleyman',
+        address1: '120 Grosvenor St',
+        city: 'Manchester',
+        county: 'Greater Manchester',
+        country: 'GB',
+        zip: 'M1 7QW'
+      },
+      order_id: generate_unique_id,
+      description: 'Store purchase',
+      ip: '86.150.65.37',
+      email: 'tekin@tekin.co.uk',
+      phone: '0161 123 4567',
+      protocol_version: '4.00',
+      three_ds_2: {
+        channel: 'browser',
+        browser_info: {
+          accept_header: 'unknown',
+          depth: 48,
+          java: true,
+          language: 'US',
+          height: 1000,
+          width: 500,
+          timezone: '-120',
+          user_agent: 'unknown',
+          browser_size: '05'
+        },
+        notification_url: 'https://example.com/notification'
+      }
     }
 
     @amount = 100
   end
 
+  # Protocol 4
+  def test_successful_purchase_v4
+    assert response = @gateway.purchase(@amount, @mastercard, @options_v4)
+    assert_success response
+
+    assert response.test?
+    assert !response.authorization.blank?
+  end
+
+  def test_three_ds_challenge_purchase_v4
+    assert response = @gateway.purchase(@amount, @mastercard, @options_v4.merge(apply_3d_secure: 1))
+
+    assert_equal '3DAUTH', response.params['Status']
+    assert response.params.include?('ACSURL')
+    assert response.params.include?('CReq')
+  end
+
+  def test_frictionless_purchase_v4
+    assert response = @gateway.purchase(@amount, @frictionless, @options_v4.merge(apply_3d_secure: 1))
+    assert_success response
+
+    assert_equal 'OK', response.params['3DSecureStatus']
+  end
+
+  def test_successful_purchase_v4_cit
+    cit_options = @options_v4.merge!({
+      stored_credential: {
+        initial_transaction: true,
+        initiator: 'cardholder',
+        reason_type: 'installment'
+      },
+      recurring_frequency: '30',
+      recurring_expiry: "#{Time.now.year + 1}-04-21",
+      installment_data: 5,
+      order_id: generate_unique_id
+    })
+    assert response = @gateway.purchase(@amount, @mastercard, cit_options)
+    assert_success response
+    assert response.test?
+    assert !response.authorization.blank?
+
+    network_transaction_id = response.params['SchemeTraceID']
+    cit_options = @options_v4.merge!({
+      stored_credential: {
+        initial_transaction: false,
+        initiator: 'merchant',
+        reason_type: 'installment',
+        network_transaction_id:
+      },
+      recurring_frequency: '30',
+      recurring_expiry: "#{Time.now.year + 1}-04-21",
+      installment_data: 5,
+      order_id: generate_unique_id
+    })
+    assert response = @gateway.purchase(@amount, @mastercard, cit_options)
+    assert_success response
+    assert response.test?
+    assert !response.authorization.blank?
+  end
+
+  # Protocol 3
   def test_successful_mastercard_purchase
     assert response = @gateway.purchase(@amount, @mastercard, @options)
     assert_success response
 
     assert response.test?
     assert !response.authorization.blank?
+  end
+
+  def test_protocol_version_v4_purchase
+    assert response = @gateway.purchase(@amount, @mastercard, @options.merge(protocol_version: '4.00'))
+    assert_failure response
+
+    assert_equal 'MALFORMED', response.params['Status']
+    assert_equal '3227 : The ThreeDSNotificationURL field is required.', response.message
   end
 
   def test_unsuccessful_purchase
@@ -116,12 +236,35 @@ class RemoteSagePayTest < Test::Unit::TestCase
     assert response.test?
   end
 
+  def test_successful_purchase_via_reference
+    assert initial_response = @gateway.purchase(@amount, @mastercard, @options)
+    assert_success initial_response
+
+    options = @options.merge(order_id: generate_unique_id)
+    assert first_reference_response = @gateway.purchase(@amount, initial_response.authorization, options)
+    assert_success first_reference_response
+
+    options = @options.merge(order_id: generate_unique_id)
+    assert second_reference_response = @gateway.purchase(@amount, first_reference_response.authorization, options)
+    assert_success second_reference_response
+  end
+
   def test_successful_authorization_and_capture
     assert auth = @gateway.authorize(@amount, @mastercard, @options)
     assert_success auth
 
     assert capture = @gateway.capture(@amount, auth.authorization)
     assert_success capture
+  end
+
+  def test_successful_authorization_and_capture_and_refund
+    assert auth = @gateway.authorize(@amount, @mastercard, @options)
+    assert_success auth
+
+    assert capture = @gateway.capture(@amount, auth.authorization)
+    assert_success capture
+    assert refund = @gateway.refund(@amount, capture.authorization, description: 'Crediting trx', order_id: generate_unique_id)
+    assert_success refund
   end
 
   def test_successful_authorization_and_void
@@ -143,12 +286,7 @@ class RemoteSagePayTest < Test::Unit::TestCase
   def test_successful_purchase_and_refund
     assert purchase = @gateway.purchase(@amount, @mastercard, @options)
     assert_success purchase
-
-    assert refund = @gateway.refund(@amount, purchase.authorization,
-      :description => 'Crediting trx',
-      :order_id => generate_unique_id
-    )
-
+    assert refund = @gateway.refund(@amount, purchase.authorization, description: 'Crediting trx', order_id: generate_unique_id)
     assert_success refund
   end
 
@@ -158,14 +296,6 @@ class RemoteSagePayTest < Test::Unit::TestCase
     assert response.test?
     assert !response.authorization.blank?
   end
-
-  # Maestro is not available for GBP
-  # def test_successful_maestro_purchase
-  #   assert response = @gateway.purchase(@amount, @maestro, @options)
-  #   assert_success response
-  #   assert response.test?
-  #   assert !response.authorization.blank?
-  # end
 
   def test_successful_amex_purchase
     assert response = @gateway.purchase(@amount, @amex, @options)
@@ -183,15 +313,15 @@ class RemoteSagePayTest < Test::Unit::TestCase
 
   def test_successful_purchase_with_overly_long_fields
     options = {
-      description: "SagePay transactions fail if the description is more than 100 characters. Therefore, we truncate it to 100 characters.",
+      description: 'SagePay transactions fail if the description is more than 100 characters. Therefore, we truncate it to 100 characters.',
       order_id: "#{generate_unique_id} SagePay order_id cannot be more than 40 characters.",
       billing_address: {
         name: 'FirstNameCannotBeMoreThanTwentyChars SurnameCannotBeMoreThanTwenty',
         address1: 'The Billing Address 1 Cannot Be More Than One Hundred Characters if it is it will fail.  Therefore, we truncate it.',
         address2: 'The Billing Address 2 Cannot Be More Than One Hundred Characters if it is it will fail.  Therefore, we truncate it.',
-        phone: "111222333444555666777888999",
-        city: "TheCityCannotBeMoreThanFortyCharactersReally",
-        state: "NCStateIsTwoChars",
+        phone: '111222333444555666777888999',
+        city: 'TheCityCannotBeMoreThanFortyCharactersReally',
+        state: 'NCStateIsTwoChars',
         country: 'USMustBeTwoChars',
         zip: 'PostalCodeCannotExceedTenChars'
       },
@@ -199,16 +329,16 @@ class RemoteSagePayTest < Test::Unit::TestCase
         name: 'FirstNameCannotBeMoreThanTwentyChars SurnameCannotBeMoreThanTwenty',
         address1: 'The Shipping Address 1 Cannot Be More Than One Hundred Characters if it is it will fail.  Therefore, we truncate it.',
         address2: 'The Shipping Address 2 Cannot Be More Than One Hundred Characters if it is it will fail.  Therefore, we truncate it.',
-        phone: "111222333444555666777888999",
-        city: "TheCityCannotBeMoreThanFortyCharactersReally",
-        state: "NCStateIsTwoChars",
+        phone: '111222333444555666777888999',
+        city: 'TheCityCannotBeMoreThanFortyCharactersReally',
+        state: 'NCStateIsTwoChars',
         country: 'USMustBeTwoChars',
         zip: 'PostalCodeCannotExceedTenChars'
       }
     }
 
-    @visa.first_name = "FullNameOnACardMustBeLessThanFiftyCharacters"
-    @visa.last_name = "OtherwiseSagePayFailsIt"
+    @visa.first_name = 'FullNameOnACardMustBeLessThanFiftyCharacters'
+    @visa.last_name = 'OtherwiseSagePayFailsIt'
 
     assert response = @gateway.purchase(@amount, @visa, options)
     assert_success response
@@ -230,7 +360,7 @@ class RemoteSagePayTest < Test::Unit::TestCase
     @options[:apply_avscv2] = 1
     response = @gateway.purchase(@amount, @visa, @options)
     assert_success response
-    assert_equal "Y", response.cvv_result['code']
+    assert_equal 'M', response.cvv_result['code']
   end
 
   def test_successful_purchase_with_pay_pal_callback_url
@@ -243,9 +373,9 @@ class RemoteSagePayTest < Test::Unit::TestCase
     # Example from "Sage Pay Direct Integration and Protocol Guidelines 3.00"
     # Published: 27/08/2015
     @options[:basket] = '4:Pioneer NSDV99 DVD-Surround Sound System:1:424.68:' \
-      '74.32:499.00: 499.00:Donnie Darko Director’s Cut:3:11.91:2.08:13.99:' \
-      '41.97: Finding Nemo:2:11.05:1.94:12.99:25.98: Delivery:---:---:---:---' \
-      ':4.99'
+                        '74.32:499.00: 499.00:Donnie Darko Director’s Cut:3:11.91:2.08:13.99:' \
+                        '41.97: Finding Nemo:2:11.05:1.94:12.99:25.98: Delivery:---:---:---:---' \
+                        ':4.99'
     response = @gateway.purchase(@amount, @visa, @options)
     assert_success response
   end
@@ -256,15 +386,16 @@ class RemoteSagePayTest < Test::Unit::TestCase
     assert_success response
   end
 
-  def test_successful_transaction_registration_with_apply_3d_secure
-    @options[:apply_3d_secure] = 1
-    response = @gateway.purchase(@amount, @visa, @options)
-    # We receive a different type of response for 3D Secure requiring to
-    # redirect the user to the ACSURL given inside the response
-    assert response.params.include?('ACSURL')
-    assert_equal 'OK', response.params['3DSecureStatus']
-    assert_equal '3DAUTH', response.params['Status']
-  end
+  # Test failing on master and feature branch
+  # def test_successful_transaction_registration_with_apply_3d_secure
+  #   @options[:apply_3d_secure] = 1
+  #   response = @gateway.purchase(@amount, @visa, @options)
+  # We receive a different type of response for 3D Secure requiring to
+  # redirect the user to the ACSURL given inside the response
+  #   assert response.params.include?('ACSURL')
+  #   assert_equal 'OK', response.params['3DSecureStatus']
+  #   assert_equal '3DAUTH', response.params['Status']
+  # end
 
   def test_successful_purchase_with_account_type
     @options[:account_type] = 'E'
@@ -317,8 +448,7 @@ class RemoteSagePayTest < Test::Unit::TestCase
   def test_successful_repeat_purchase
     response = @gateway.purchase(@amount, @visa, @options)
     assert_success response
-
-    repeat = @gateway.purchase(@amount, response.authorization, @options.merge(repeat: true, order_id: generate_unique_id))
+    repeat = @gateway.purchase(@amount, response.authorization, @options.merge(order_id: generate_unique_id))
     assert_success repeat
   end
 
@@ -326,7 +456,7 @@ class RemoteSagePayTest < Test::Unit::TestCase
     message = SagePayGateway.simulate ? 'VSP Simulator cannot find your vendor name.  Ensure you have have supplied a Vendor field with your VSP Vendor name assigned to it.' : '3034 : The Vendor or VendorName value is required.'
 
     gateway = SagePayGateway.new(
-        :login => ''
+      login: ''
     )
     assert response = gateway.purchase(@amount, @mastercard, @options)
     assert_equal message, response.message
@@ -345,7 +475,7 @@ class RemoteSagePayTest < Test::Unit::TestCase
     assert response = @gateway.store(@visa)
     assert_success response
     assert !response.authorization.blank?
-    assert purchase = @gateway.purchase(@amount, response.authorization, @options.merge(customer: 1))
+    assert @gateway.purchase(@amount, response.authorization, @options.merge(customer: 1))
     assert purchase = @gateway.purchase(@amount, response.authorization, @options.merge(verification_value: '123', order_id: generate_unique_id))
     assert_success purchase
   end
@@ -359,13 +489,13 @@ class RemoteSagePayTest < Test::Unit::TestCase
   end
 
   def test_successful_token_creation_from_purchase
-    assert response = @gateway.purchase(@amount, @visa, @options.merge(:store => true))
+    assert response = @gateway.purchase(@amount, @visa, @options.merge(store: true))
     assert_success response
     assert !response.authorization.blank?
   end
 
   def test_successful_token_creation_from_authorize
-    assert response = @gateway.authorize(@amount, @visa, @options.merge(:store => true))
+    assert response = @gateway.authorize(@amount, @visa, @options.merge(store: true))
     assert_success response
     assert !response.authorization.blank?
   end
@@ -381,13 +511,13 @@ class RemoteSagePayTest < Test::Unit::TestCase
   def test_successful_verify
     response = @gateway.verify(@visa, @options)
     assert_success response
-    assert_equal "Success", response.message
+    assert_equal 'Success', response.message
   end
 
   def test_failed_verify
     response = @gateway.verify(@declined_card, @options)
     assert_failure response
-    assert_match(/Card Range not supported/, response.message)
+    assert_match(/5011 : Your card number has failed our validity checks and appears to be incorrect.  Please check and re-enter./, response.message)
   end
 
   def test_transcript_scrubbing
@@ -409,56 +539,56 @@ class RemoteSagePayTest < Test::Unit::TestCase
   # Based on example from http://www.sagepay.co.uk/support/basket-xml
   # Only kept required fields to make sense
   def basket_xml
-    <<-XML
-<basket>
-  <item>
-    <description>DVD 1</description>
-    <quantity>2</quantity>
-    <unitNetAmount>24.50</unitNetAmount>
-    <unitTaxAmount>00.50</unitTaxAmount>
-    <unitGrossAmount>25.00</unitGrossAmount>
-    <totalGrossAmount>50.00</totalGrossAmount>
-  </item>
- </basket>
+    <<~XML
+      <basket>
+        <item>
+          <description>DVD 1</description>
+          <quantity>2</quantity>
+          <unitNetAmount>24.50</unitNetAmount>
+          <unitTaxAmount>00.50</unitTaxAmount>
+          <unitGrossAmount>25.00</unitGrossAmount>
+          <totalGrossAmount>50.00</totalGrossAmount>
+        </item>
+       </basket>
     XML
   end
 
   # Example from http://www.sagepay.co.uk/support/customer-xml
   def customer_xml
-    <<-XML
-<customer>
-  <customerMiddleInitial>W</customerMiddleInitial>
-  <customerBirth>1983-01-01</customerBirth>
-  <customerWorkPhone>020 1234567</customerWorkPhone>
-  <customerMobilePhone>0799 1234567</customerMobilePhone>
-  <previousCust>0</previousCust>
-  <timeOnFile>10</timeOnFile>
-  <customerId>CUST123</customerId>
-</customer>
+    <<~XML
+      <customer>
+        <customerMiddleInitial>W</customerMiddleInitial>
+        <customerBirth>1983-01-01</customerBirth>
+        <customerWorkPhone>020 1234567</customerWorkPhone>
+        <customerMobilePhone>0799 1234567</customerMobilePhone>
+        <previousCust>0</previousCust>
+        <timeOnFile>10</timeOnFile>
+        <customerId>CUST123</customerId>
+      </customer>
     XML
   end
 
   # Example from https://www.sagepay.co.uk/support/12/36/protocol-3-00-surcharge-xml
   def surcharge_xml
-    <<-XML
-<surcharges>
-  <surcharge>
-    <paymentType>DELTA</paymentType>
-    <fixed>2.50</fixed>
-  </surcharge>
-  <surcharge>
-    <paymentType>VISA</paymentType>
-    <fixed>2.50</fixed>
-  </surcharge>
-  <surcharge>
-    <paymentType>AMEX</paymentType>
-    <percentage>1.50</percentage>
-  </surcharge>
-  <surcharge>
-    <paymentType>MC</paymentType>
-    <percentage>1.50</percentage>
-  </surcharge>
-</surcharges>
+    <<~XML
+      <surcharges>
+        <surcharge>
+          <paymentType>DELTA</paymentType>
+          <fixed>2.50</fixed>
+        </surcharge>
+        <surcharge>
+          <paymentType>VISA</paymentType>
+          <fixed>2.50</fixed>
+        </surcharge>
+        <surcharge>
+          <paymentType>AMEX</paymentType>
+          <percentage>1.50</percentage>
+        </surcharge>
+        <surcharge>
+          <paymentType>MC</paymentType>
+          <percentage>1.50</percentage>
+        </surcharge>
+      </surcharges>
     XML
   end
 end
